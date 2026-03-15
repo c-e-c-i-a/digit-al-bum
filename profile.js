@@ -1,414 +1,525 @@
-import { supabase } from "./supabaseClient.js";
+// profile.js
 
-/* ---------------------------
-   ELEMENTI
-----------------------------*/
+let currentUser = null;
 
-const coverBtn = document.getElementById("coverBtn");
-const coverInput = document.getElementById("coverInput");
+document.addEventListener("DOMContentLoaded", async () => {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-const photosBtn = document.getElementById("photosBtn");
-const photosInput = document.getElementById("photosInput");
+  if (error || !user) {
+    window.location.href = "login.html";
+    return;
+  }
 
-const ricordoCaption = document.getElementById("ricordoCaption");
-const publishRicordoBtn = document.getElementById("publishRicordoBtn");
+  currentUser = user;
 
-const ricordiContainer = document.getElementById("ricordiContainer");
+  setupMenu();
+  setupProfilePic();
+  setupBio();
+  setupRicordiUI();
+  setupHighlightsUI();
+
+  await loadProfile();
+  await loadRicordi();
+  await loadHighlights();
+});
+
+// MENU
+function setupMenu() {
+  const menuButton = document.getElementById("menuButton");
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  menuButton.addEventListener("click", () => {
+    dropdownMenu.classList.toggle("hidden");
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!menuButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+      dropdownMenu.classList.add("hidden");
+    }
+  });
+}
 
 // FOTO PROFILO
-const changePicBtn = document.getElementById("changePicBtn");
-const profilePicInput = document.getElementById("profilePicInput");
-const profilePic = document.getElementById("profilePic");
+function setupProfilePic() {
+  const changePicBtn = document.getElementById("changePicBtn");
+  const profilePicInput = document.getElementById("profilePicInput");
+
+  changePicBtn.addEventListener("click", () => {
+    profilePicInput.click();
+  });
+
+  profilePicInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentUser) return;
+
+    const fileName = `avatars/${currentUser.id}-${Date.now()}.jpg`;
+
+    const { error } = await supabase.storage
+      .from("instalbum")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Errore upload avatar:", error);
+      return;
+    }
+
+    const publicUrl = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(fileName).data.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("user_id", currentUser.id);
+
+    if (updateError) {
+      console.error("Errore update profilo:", updateError);
+      return;
+    }
+
+    document.getElementById("profilePic").src = publicUrl;
+  });
+}
 
 // BIO
-const bioInput = document.getElementById("bioInput");
-const saveBioBtn = document.getElementById("saveBioBtn");
+function setupBio() {
+  const saveBioBtn = document.getElementById("saveBioBtn");
+  const bioInput = document.getElementById("bioInput");
 
-// MENU TRE PUNTINI
-const menuButton = document.getElementById("menuButton");
-const dropdownMenu = document.getElementById("dropdownMenu");
+  saveBioBtn.addEventListener("click", async () => {
+    if (!currentUser) return;
+    const bio = bioInput.value.trim();
 
-menuButton.addEventListener("click", (e) => {
-  e.stopPropagation();
-  dropdownMenu.classList.toggle("hidden");
-});
+    const { error } = await supabase
+      .from("profiles")
+      .update({ bio })
+      .eq("user_id", currentUser.id);
 
-document.addEventListener("click", (e) => {
-  if (!menuButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
-    dropdownMenu.classList.add("hidden");
-  }
-});
+    if (error) {
+      console.error("Errore salvataggio bio:", error);
+      return;
+    }
+  });
+}
 
-let selectedCover = null;
-let selectedPhotos = [];
+async function loadProfile() {
+  if (!currentUser) return;
 
-/* ---------------------------
-   FOTO PROFILO – CAMBIO FOTO
-----------------------------*/
-
-changePicBtn.addEventListener("click", () => {
-  profilePicInput.click();
-});
-
-profilePicInput.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
-
-  const fileName = `profile/${user.id}/profile_${Date.now()}.jpg`;
-
-  await supabase.storage.from("instalbum").upload(fileName, file);
-
-  const { data: urlData } = supabase.storage
-    .from("instalbum")
-    .getPublicUrl(fileName);
-
-  const publicUrl = urlData.publicUrl;
-
-  await supabase
+  const { data, error } = await supabase
     .from("profiles")
-    .update({ avatar_url: publicUrl })
-    .eq("user_id", user.id);
-
-  profilePic.src = publicUrl;
-});
-
-/* ---------------------------
-   FOTO PROFILO – CARICAMENTO
-----------------------------*/
-
-async function loadProfilePic() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("avatar_url")
-    .eq("user_id", user.id)
+    .select("*")
+    .eq("user_id", currentUser.id)
     .single();
 
-  if (profile && profile.avatar_url) {
-    profilePic.src = profile.avatar_url;
+  if (error) {
+    console.error("Errore caricamento profilo:", error);
+    return;
+  }
+
+  if (data.avatar_url) {
+    document.getElementById("profilePic").src = data.avatar_url;
+  }
+  if (data.bio) {
+    document.getElementById("bioInput").value = data.bio;
   }
 }
 
-/* ---------------------------
-   BIO – SALVATAGGIO
-----------------------------*/
+// RICORDI (POST)
+function setupRicordiUI() {
+  const addRicordoBtn = document.getElementById("addRicordoBtn");
+  const newRicordoModal = document.getElementById("newRicordoModal");
+  const closeNewRicordoModal = document.getElementById("closeNewRicordoModal");
+  const publishBtn = document.getElementById("modalPublishBtn");
 
-saveBioBtn.addEventListener("click", async () => {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
+  addRicordoBtn.addEventListener("click", () => {
+    newRicordoModal.classList.remove("hidden");
+  });
 
-  await supabase
-    .from("profiles")
-    .update({ bio: bioInput.value })
-    .eq("user_id", user.id);
+  closeNewRicordoModal.addEventListener("click", () => {
+    newRicordoModal.classList.add("hidden");
+  });
 
-  alert("Bio salvata ✨");
-});
+  newRicordoModal
+    .querySelector(".modal-backdrop")
+    .addEventListener("click", () => {
+      newRicordoModal.classList.add("hidden");
+    });
 
-/* ---------------------------
-   BIO – CARICAMENTO
-----------------------------*/
+  publishBtn.addEventListener("click", createRicordo);
 
-async function loadBio() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
+  // chiusura modal ricordo visualizzazione
+  const ricordoModal = document.getElementById("ricordoModal");
+  const closeRicordoModal = document.getElementById("closeRicordoModal");
+  const ricordoBackdrop = ricordoModal.querySelector(".modal-backdrop");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("bio")
-    .eq("user_id", user.id)
-    .single();
+  closeRicordoModal.addEventListener("click", () => {
+    ricordoModal.classList.add("hidden");
+  });
 
-  if (profile && profile.bio) {
-    bioInput.value = profile.bio;
-  }
+  ricordoBackdrop.addEventListener("click", () => {
+    ricordoModal.classList.add("hidden");
+  });
 }
 
-/* ---------------------------
-   RICORDI – COPERTINA
-----------------------------*/
+async function createRicordo() {
+  if (!currentUser) return;
 
-coverBtn.addEventListener("click", () => coverInput.click());
-coverInput.addEventListener("change", (e) => {
-  selectedCover = e.target.files[0];
-});
+  const coverInput = document.getElementById("modalCoverInput");
+  const photosInput = document.getElementById("modalPhotosInput");
+  const captionInput = document.getElementById("modalCaption");
 
-/* ---------------------------
-   RICORDI – FOTO INTERNE
-----------------------------*/
+  const coverFile = coverInput.files[0];
+  const photoFiles = Array.from(photosInput.files);
+  const caption = captionInput.value.trim();
 
-photosBtn.addEventListener("click", () => photosInput.click());
-photosInput.addEventListener("change", (e) => {
-  selectedPhotos = Array.from(e.target.files);
-});
+  if (!coverFile) {
+    alert("Seleziona una copertina");
+    return;
+  }
 
-/* ---------------------------
-   PUBBLICA RICORDO
-----------------------------*/
-
-publishRicordoBtn.addEventListener("click", async () => {
-  if (!selectedCover) return alert("Scegli una copertina");
-  if (!ricordoCaption.value.trim()) return alert("Scrivi un ricordo");
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
-
-  const coverName = `ricordi/${user.id}/cover_${Date.now()}.jpg`;
-  await supabase.storage.from("instalbum").upload(coverName, selectedCover);
-
-  const { data: coverUrl } = supabase.storage
+  const coverPath = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
+  const { error: coverError } = await supabase.storage
     .from("instalbum")
-    .getPublicUrl(coverName);
+    .upload(coverPath, coverFile, {
+      cacheControl: "3600",
+      upsert: true,
+    });
 
-  const { data: ricordo } = await supabase
+  if (coverError) {
+    console.error("Errore upload copertina:", coverError);
+    return;
+  }
+
+  const coverUrl = supabase.storage
+    .from("instalbum")
+    .getPublicUrl(coverPath).data.publicUrl;
+
+  const { data: ricordoData, error: ricordoError } = await supabase
     .from("ricordi")
     .insert({
-      user_id: user.id,
-      caption: ricordoCaption.value,
-      cover_image: coverUrl.publicUrl
+      user_id: currentUser.id,
+      caption,
+      cover_image: coverUrl,
     })
-    .select()
+    .select("*")
     .single();
 
-  for (const photo of selectedPhotos) {
-    const fileName = `ricordi/${user.id}/${Date.now()}_${photo.name}`;
-    await supabase.storage.from("instalbum").upload(fileName, photo);
-
-    const { data: photoUrl } = supabase.storage
-      .from("instalbum")
-      .getPublicUrl(fileName);
-
-    await supabase.from("ricordi_photos").insert({
-      ricordo_id: ricordo.id,
-      image_path: photoUrl.publicUrl
-    });
+  if (ricordoError) {
+    console.error("Errore inserimento ricordo:", ricordoError);
+    return;
   }
 
-  selectedCover = null;
-  selectedPhotos = [];
-  ricordoCaption.value = "";
+  for (const file of photoFiles) {
+    const photoPath = `ricordi/${currentUser.id}/${ricordoData.id}-${Date.now()}-${file.name}`;
+    const { error: photoError } = await supabase.storage
+      .from("instalbum")
+      .upload(photoPath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
 
-  loadRicordi();
-});
+    if (photoError) {
+      console.error("Errore upload foto interna:", photoError);
+      continue;
+    }
 
-/* ---------------------------
-   CARICA RICORDI
-----------------------------*/
+    const photoUrl = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(photoPath).data.publicUrl;
+
+    const { error: insertPhotoError } = await supabase
+      .from("ricordi_photos")
+      .insert({
+        ricordo_id: ricordoData.id,
+        image_path: photoUrl,
+      });
+
+    if (insertPhotoError) {
+      console.error("Errore inserimento ricordo_photo:", insertPhotoError);
+    }
+  }
+
+  coverInput.value = "";
+  photosInput.value = "";
+  captionInput.value = "";
+
+  document.getElementById("newRicordoModal").classList.add("hidden");
+  await loadRicordi();
+}
 
 async function loadRicordi() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
+  if (!currentUser) return;
 
-  const { data: ricordi } = await supabase
+  const { data: ricordi, error } = await supabase
     .from("ricordi")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false });
 
-  ricordiContainer.innerHTML = "";
+  if (error) {
+    console.error("Errore caricamento ricordi:", error);
+    return;
+  }
 
-  if (!ricordi) return;
+  const grid = document.getElementById("ricordiGrid");
+  grid.innerHTML = "";
 
   for (const ricordo of ricordi) {
-    const { data: photos } = await supabase
+    const { data: photos, error: photosError } = await supabase
       .from("ricordi_photos")
       .select("*")
       .eq("ricordo_id", ricordo.id);
 
-    const card = document.createElement("div");
-    card.className = "ricordo-card";
-
-    let carouselHTML = "";
-    if (photos && photos.length > 0) {
-      carouselHTML = `
-        <div class="carousel-container">
-          <button class="carousel-btn left">‹</button>
-          <div class="carousel-track">
-            ${photos
-              .map(
-                (p) =>
-                  `<img class="carousel-image" src="${p.image_path}" />`
-              )
-              .join("")}
-          </div>
-          <button class="carousel-btn right">›</button>
-        </div>
-      `;
+    if (photosError) {
+      console.error("Errore caricamento foto ricordo:", photosError);
+      continue;
     }
+
+    const card = document.createElement("div");
+    card.classList.add("ricordo-card-grid");
 
     card.innerHTML = `
-      <img class="ricordo-cover" src="${ricordo.cover_image}" />
-      <div class="ricordo-caption-text">${ricordo.caption}</div>
-      <div class="ricordo-date">${new Date(
-        ricordo.created_at
-      ).toLocaleString()}</div>
-      ${carouselHTML}
+      <img class="ricordo-cover-grid" src="${ricordo.cover_image}" alt="Ricordo" />
     `;
 
-    ricordiContainer.appendChild(card);
+    card.addEventListener("click", () => {
+      openRicordoModal(ricordo, photos || []);
+    });
 
-    if (photos && photos.length > 0) {
-      const track = card.querySelector(".carousel-track");
-      const leftBtn = card.querySelector(".carousel-btn.left");
-      const rightBtn = card.querySelector(".carousel-btn.right");
-
-      let index = 0;
-
-      leftBtn.onclick = () => {
-        index = Math.max(index - 1, 0);
-        track.style.transform = `translateX(-${index * 100}%)`;
-      };
-
-      rightBtn.onclick = () => {
-        index = Math.min(index + 1, photos.length - 1);
-        track.style.transform = `translateX(-${index * 100}%)`;
-      };
-    }
+    grid.appendChild(card);
   }
 }
 
-/* ---------------------------
-   GALLERIA FOTO – ELEMENTI
-----------------------------*/
+function openRicordoModal(ricordo, photos) {
+  const modal = document.getElementById("ricordoModal");
+  const captionEl = document.getElementById("ricordoModalCaption");
+  const dateEl = document.getElementById("ricordoModalDate");
+  const carousel = document.getElementById("ricordoModalCarousel");
 
-const addPhotoBtn = document.getElementById("addPhotoBtn");
-const photoInput = document.getElementById("photoInput");
-const photoGrid = document.getElementById("photoGrid");
+  captionEl.textContent = ricordo.caption || "";
+  dateEl.textContent = new Date(ricordo.created_at).toLocaleString();
 
-/* ---------------------------
-   GALLERIA FOTO – UPLOAD
-----------------------------*/
-
-addPhotoBtn.addEventListener("click", () => {
-  photoInput.click();
-});
-
-photoInput.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
-
-  const fileName = `gallery/${user.id}/photo_${Date.now()}.jpg`;
-
-  await supabase.storage.from("instalbum").upload(fileName, file);
-
-  const { data: urlData } = supabase.storage
-    .from("instalbum")
-    .getPublicUrl(fileName);
-
-  const publicUrl = urlData.publicUrl;
-
-  await supabase
-    .from("gallery_photos")
-    .insert({
-      user_id: user.id,
-      image_url: publicUrl
-    });
-
-  await loadGallery();
-});
-
-/* ---------------------------
-   GALLERIA FOTO – CARICAMENTO
-----------------------------*/
-
-async function loadGallery() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const user = sessionData.session.user;
-
-  const { data: photos } = await supabase
-    .from("gallery_photos")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  photoGrid.innerHTML = "";
-
-  if (!photos) return;
-
-  photos.forEach((p) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "photo-wrapper";
-
+  carousel.innerHTML = "";
+  if (!photos || photos.length === 0) {
     const img = document.createElement("img");
-    img.src = p.image_url;
+    img.classList.add("carousel-image");
+    img.src = ricordo.cover_image;
+    carousel.appendChild(img);
+  } else {
+    photos.forEach((p) => {
+      const img = document.createElement("img");
+      img.classList.add("carousel-image");
+      img.src = p.image_path;
+      carousel.appendChild(img);
+    });
+  }
 
-    img.addEventListener("click", () => {
-      openImageModal(p.image_url);
+  modal.classList.remove("hidden");
+}
+
+// HIGHLIGHTS (FRIENDS)
+function setupHighlightsUI() {
+  const newHighlightBtn = document.getElementById("newHighlightBtn");
+  const newHighlightModal = document.getElementById("newHighlightModal");
+  const closeNewHighlightModal = document.getElementById(
+    "closeNewHighlightModal"
+  );
+  const createHighlightBtn = document.getElementById("createHighlightBtn");
+
+  newHighlightBtn.addEventListener("click", () => {
+    newHighlightModal.classList.remove("hidden");
+  });
+
+  closeNewHighlightModal.addEventListener("click", () => {
+    newHighlightModal.classList.add("hidden");
+  });
+
+  newHighlightModal
+    .querySelector(".modal-backdrop")
+    .addEventListener("click", () => {
+      newHighlightModal.classList.add("hidden");
     });
 
-    const del = document.createElement("button");
-    del.className = "delete-btn";
-    del.textContent = "🗑️";
+  createHighlightBtn.addEventListener("click", createHighlight);
 
-    del.addEventListener("click", async (e) => {
-      e.stopPropagation();
+  const highlightModal = document.getElementById("highlightModal");
+  const closeHighlightModal = document.getElementById("closeHighlightModal");
+  const highlightBackdrop = highlightModal.querySelector(".modal-backdrop");
 
-      await supabase
-        .from("gallery_photos")
-        .delete()
-        .eq("id", p.id);
+  closeHighlightModal.addEventListener("click", () => {
+    highlightModal.classList.add("hidden");
+  });
 
-      const path = p.image_url.split("/storage/v1/object/public/instalbum/")[1];
-      if (path) {
-        await supabase.storage.from("instalbum").remove([path]);
-      }
-
-      wrapper.remove();
-    });
-
-    wrapper.appendChild(img);
-    wrapper.appendChild(del);
-    photoGrid.appendChild(wrapper);
+  highlightBackdrop.addEventListener("click", () => {
+    highlightModal.classList.add("hidden");
   });
 }
 
-/* ---------------------------
-   ZOOM FOTO – MODAL
-----------------------------*/
+async function createHighlight() {
+  if (!currentUser) return;
 
-const imageModal = document.getElementById("imageModal");
-const modalImage = document.getElementById("modalImage");
-const closeModalBtn = document.getElementById("closeModalBtn");
+  const titleInput = document.getElementById("highlightTitleInput");
+  const coverInput = document.getElementById("highlightCoverInput");
+  const photosInput = document.getElementById("highlightPhotosInput");
 
-function openImageModal(url) {
-  modalImage.src = url;
-  imageModal.classList.remove("hidden");
-}
+  const title = titleInput.value.trim();
+  const coverFile = coverInput.files[0];
+  const photoFiles = Array.from(photosInput.files);
 
-function closeImageModal() {
-  imageModal.classList.add("hidden");
-  modalImage.src = "";
-}
-
-if (closeModalBtn) {
-  closeModalBtn.addEventListener("click", closeImageModal);
-}
-
-imageModal.addEventListener("click", (e) => {
-  if (e.target === imageModal) {
-    closeImageModal();
+  if (!title || !coverFile) {
+    alert("Nome e copertina sono obbligatori");
+    return;
   }
-});
 
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    closeImageModal();
+  const coverPath = `highlights/${currentUser.id}/cover-${Date.now()}.jpg`;
+  const { error: coverError } = await supabase.storage
+    .from("instalbum")
+    .upload(coverPath, coverFile, {
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+  if (coverError) {
+    console.error("Errore upload copertina highlight:", coverError);
+    return;
   }
-});
 
-/* ---------------------------
-   AVVIO
-----------------------------*/
+  const coverUrl = supabase.storage
+    .from("instalbum")
+    .getPublicUrl(coverPath).data.publicUrl;
 
-loadProfilePic();
-loadBio();
-loadRicordi();
-loadGallery();
+  const { data: highlightData, error: highlightError } = await supabase
+    .from("highlights")
+    .insert({
+      user_id: currentUser.id,
+      title,
+      cover_image: coverUrl,
+    })
+    .select("*")
+    .single();
+
+  if (highlightError) {
+    console.error("Errore inserimento highlight:", highlightError);
+    return;
+  }
+
+  for (const file of photoFiles) {
+    const photoPath = `highlights/${currentUser.id}/${highlightData.id}-${Date.now()}-${file.name}`;
+    const { error: photoError } = await supabase.storage
+      .from("instalbum")
+      .upload(photoPath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (photoError) {
+      console.error("Errore upload foto highlight:", photoError);
+      continue;
+    }
+
+    const photoUrl = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(photoPath).data.publicUrl;
+
+    const { error: insertPhotoError } = await supabase
+      .from("highlight_photos")
+      .insert({
+        highlight_id: highlightData.id,
+        image_path: photoUrl,
+      });
+
+    if (insertPhotoError) {
+      console.error("Errore inserimento highlight_photo:", insertPhotoError);
+    }
+  }
+
+  titleInput.value = "";
+  coverInput.value = "";
+  photosInput.value = "";
+
+  document.getElementById("newHighlightModal").classList.add("hidden");
+  await loadHighlights();
+}
+
+async function loadHighlights() {
+  if (!currentUser) return;
+
+  const { data: highlights, error } = await supabase
+    .from("highlights")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("Errore caricamento highlights:", error);
+    return;
+  }
+
+  const row = document.getElementById("highlightsRow");
+  row.innerHTML = `
+    <div class="highlight-item new-highlight" id="newHighlightBtn">
+      <div class="highlight-circle">+</div>
+      <span class="highlight-label">Nuovo</span>
+    </div>
+  `;
+
+  setupHighlightsUI();
+
+  for (const h of highlights) {
+    const item = document.createElement("div");
+    item.classList.add("highlight-item");
+
+    item.innerHTML = `
+      <div class="highlight-circle">
+        <img src="${h.cover_image}" alt="${h.title}" />
+      </div>
+      <span class="highlight-label">${h.title}</span>
+    `;
+
+    item.addEventListener("click", () => {
+      openHighlightModal(h);
+    });
+
+    row.appendChild(item);
+  }
+}
+
+async function openHighlightModal(highlight) {
+  const modal = document.getElementById("highlightModal");
+  const titleEl = document.getElementById("highlightModalTitle");
+  const carousel = document.getElementById("highlightModalCarousel");
+
+  titleEl.textContent = highlight.title;
+
+  const { data: photos, error } = await supabase
+    .from("highlight_photos")
+    .select("*")
+    .eq("highlight_id", highlight.id);
+
+  if (error) {
+    console.error("Errore caricamento foto highlight:", error);
+    return;
+  }
+
+  carousel.innerHTML = "";
+  (photos || []).forEach((p) => {
+    const img = document.createElement("img");
+    img.classList.add("carousel-image");
+    img.src = p.image_path;
+    carousel.appendChild(img);
+  });
+
+  modal.classList.remove("hidden");
+}
