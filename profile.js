@@ -1,4 +1,5 @@
 // profile.js
+import { supabase } from './supabaseClient.js';
 
 let currentUser = null;
 
@@ -523,3 +524,4 @@ async function openHighlightModal(highlight) {
 
   modal.classList.remove("hidden");
 }
+
