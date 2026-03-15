@@ -1,5 +1,45 @@
 // profile.js
-import { supabase } from './supabaseClient.js';
+import { supabase } from "./supabaseClient.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const profilePic = document.getElementById("profilePic");
+  const changePicBtn = document.getElementById("changePicBtn");
+  const profilePicInput = document.getElementById("profilePicInput");
+
+  // APRI FILE PICKER
+  changePicBtn.addEventListener("click", () => {
+    profilePicInput.click();
+  });
+
+  // CARICA FOTO
+  profilePicInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const filePath = `profile/${user.id}.jpg`;
+
+    // UPLOAD SU SUPABASE
+    const { error: uploadError } = await supabase.storage
+      .from("instalbum")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      console.error(uploadError);
+      alert("Errore nel caricamento della foto");
+      return;
+    }
+
+    // OTTIENI URL PUBBLICO
+    const { data: urlData } = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(filePath);
+
+    // MOSTRA LA FOTO
+    profilePic.src = urlData.publicUrl;
+  });
+});
 
 let currentUser = null;
 
