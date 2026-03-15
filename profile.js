@@ -1,6 +1,9 @@
 import { supabase } from "./supabaseClient.js";
 
-// ELEMENTI
+/* ---------------------------
+   ELEMENTI
+----------------------------*/
+
 const coverBtn = document.getElementById("coverBtn");
 const coverInput = document.getElementById("coverInput");
 
@@ -209,6 +212,8 @@ async function loadRicordi() {
 
   ricordiContainer.innerHTML = "";
 
+  if (!ricordi) return;
+
   for (const ricordo of ricordi) {
     const { data: photos } = await supabase
       .from("ricordi_photos")
@@ -219,7 +224,7 @@ async function loadRicordi() {
     card.className = "ricordo-card";
 
     let carouselHTML = "";
-    if (photos.length > 0) {
+    if (photos && photos.length > 0) {
       carouselHTML = `
         <div class="carousel-container">
           <button class="carousel-btn left">‹</button>
@@ -247,7 +252,7 @@ async function loadRicordi() {
 
     ricordiContainer.appendChild(card);
 
-    if (photos.length > 0) {
+    if (photos && photos.length > 0) {
       const track = card.querySelector(".carousel-track");
       const leftBtn = card.querySelector(".carousel-btn.left");
       const rightBtn = card.querySelector(".carousel-btn.right");
@@ -327,47 +332,77 @@ async function loadGallery() {
   photoGrid.innerHTML = "";
 
   if (!photos) return;
-photos.forEach((p) => {
-  const wrapper = document.createElement("div");
-  wrapper.className = "photo-wrapper";
 
-  const img = document.createElement("img");
-  img.src = p.image_url;
+  photos.forEach((p) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "photo-wrapper";
 
-  img.addEventListener("click", () => {
-    openImageModal(p.image_url);
+    const img = document.createElement("img");
+    img.src = p.image_url;
+
+    img.addEventListener("click", () => {
+      openImageModal(p.image_url);
+    });
+
+    const del = document.createElement("button");
+    del.className = "delete-btn";
+    del.textContent = "🗑️";
+
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      await supabase
+        .from("gallery_photos")
+        .delete()
+        .eq("id", p.id);
+
+      const path = p.image_url.split("/storage/v1/object/public/instalbum/")[1];
+      if (path) {
+        await supabase.storage.from("instalbum").remove([path]);
+      }
+
+      wrapper.remove();
+    });
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(del);
+    photoGrid.appendChild(wrapper);
   });
+}
 
-  const del = document.createElement("button");
-  del.className = "delete-btn";
-  del.textContent = "🗑️";
+/* ---------------------------
+   ZOOM FOTO – MODAL
+----------------------------*/
 
-  del.addEventListener("click", async (e) => {
-    e.stopPropagation(); // evita apertura zoom
+const imageModal = document.getElementById("imageModal");
+const modalImage = document.getElementById("modalImage");
+const closeModalBtn = document.getElementById("closeModalBtn");
 
-    // 1) elimina dal DB
-    await supabase
-      .from("gallery_photos")
-      .delete()
-      .eq("id", p.id);
+function openImageModal(url) {
+  modalImage.src = url;
+  imageModal.classList.remove("hidden");
+}
 
-    // 2) elimina dal Supabase Storage
-    const path = p.image_url.split("/storage/v1/object/public/instalbum/")[1];
-    if (path) {
-      await supabase.storage.from("instalbum").remove([path]);
-    }
+function closeImageModal() {
+  imageModal.classList.add("hidden");
+  modalImage.src = "";
+}
 
-    // 3) rimuovi dalla griglia
-    wrapper.remove();
-  });
+if (closeModalBtn) {
+  closeModalBtn.addEventListener("click", closeImageModal);
+}
 
-  wrapper.appendChild(img);
-  wrapper.appendChild(del);
-  photoGrid.appendChild(wrapper);
+imageModal.addEventListener("click", (e) => {
+  if (e.target === imageModal) {
+    closeImageModal();
+  }
 });
 
-
-}
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeImageModal();
+  }
+});
 
 /* ---------------------------
    AVVIO
@@ -377,20 +412,3 @@ loadProfilePic();
 loadBio();
 loadRicordi();
 loadGallery();
-/* ---------------------------
-   ZOOM FOTO – MODAL
-----------------------------*/
-
-const imageModal = document.getElementById("imageModal");
-const modalImage = document.getElementById("modalImage");
-
-// Apri zoom
-function openImageModal(url) {
-  modalImage.src = url;
-  imageModal.classList.remove("hidden");
-}
-
-// Chiudi zoom cliccando fuori
-imageModal.addEventListener("click", () => {
-  imageModal.classList.add("hidden");
-});
