@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Il tuo profilo – Inst‑Album</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body class="profile-body">
+
+  <!-- HEADER -->
+  <header class="profile-header">
+    <h1 class="profile-title">Il tuo profilo 💙</h1>
+
+    <div class="menu-container">
+      <button id="menuButton" class="menu-button">⋮</button>
+
+      <div id="dropdownMenu" class="dropdown-menu hidden">
+        <button id="changeProfileBtn">Cambia profilo 👥</button>
+        <button id="logoutBtn">Logout 🚪</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- FOTO PROFILO -->
+  <div class="profile-section">
+    <img id="profilePic" class="profile-pic" src="https://via.placeholder.com/150" alt="Foto profilo" />
+
+    <button class="change-pic-btn" id="changePicBtn">Cambia foto 📸</button>
+    <input type="file" id="profilePicInput" accept="image/*" hidden />
+  </div>
+
+  <!-- BIO -->
+  <div class="bio-section">
+    <textarea id="bioInput" class="bio-input" placeholder="Scrivi la tua bio…"></textarea>
+    <button id="saveBioBtn" class="save-bio-btn">Salva bio ✨</button>
+  </div>
+
+  <!-- GALLERIA FOTO -->
+  <div class="gallery-section">
+    <h2 class="gallery-title">Le tue foto 📸</h2>
+
+    <button id="addPhotoBtn" class="add-photo-btn">Aggiungi foto ➕</button>
+    <input type="file" id="photoInput" accept="image/*" hidden />
+
+    <div id="photoGrid" class="photo-grid"></div>
+  </div>
+
+  <!-- FEED RICORDI -->
+  <div class="ricordi-section">
+    <h2 class="ricordi-title">I tuoi ricordi</h2>
+    <div id="ricordiContainer"></div>
+  </div>
+
+  <!-- NUOVO RICORDO (IN FONDO) -->
+  <div class="new-ricordo-section">
+    <h2 class="new-ricordo-title">Crea un nuovo ricordo ✨</h2>
+
+    <label class="ricordo-label">Copertina</label>
+    <button id="coverBtn" class="new-ricordo-btn">Scegli copertina 📸</button>
+    <input type="file" id="coverInput" accept="image/*" hidden />
+
+    <label class="ricordo-label">Foto interne</label>
+    <button id="photosBtn" class="new-ricordo-btn">Aggiungi foto ➕</button>
+    <input type="file" id="photosInput" accept="image/*" multiple hidden />
+
+    <textarea id="ricordoCaption" class="ricordo-caption" placeholder="Scrivi un ricordo..."></textarea>
+
+    <button id="publishRicordoBtn" class="publish-ricordo-btn">Pubblica ricordo</button>
+  </div>
+  
+<!-- MODAL ZOOM FOTO -->
+<div id="imageModal" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <img id="modalImage" class="modal-image" src="" />
+</div>
+
+  <!-- SCRIPT -->
+  <script type="module" src="./profile.js"></script>
+
+</body>
+</html>

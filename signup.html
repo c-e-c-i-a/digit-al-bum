@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inst-Album – Registrati</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <h1 class="app-title">Inst-Album 💜</h1>
+    <h2 class="auth-title">Registrati ✨</h2>
+
+    <form id="signup-form" class="auth-form">
+      <label>Email
+        <input type="email" id="signup-email" required />
+      </label>
+
+      <label>Password 🔒
+        <input type="password" id="signup-password" required />
+      </label>
+
+      <label>Conferma password 🔒
+        <input type="password" id="signup-password-confirm" required />
+      </label>
+
+      <button type="submit" class="auth-button">Crea account ✨</button>
+    </form>
+
+    <p class="auth-switch">
+      Hai già un account?
+      <a href="./login.html">Accedi 🔑</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { signUpWithEmail } from './auth.js';
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
+      const confirm = document.getElementById('signup-password-confirm').value.trim();
+
+      if (password !== confirm) {
+        alert('Le password non coincidono.');
+        return;
+      }
+
+      await signUpWithEmail(email, password);
+    });
+  </script>
+</body>
+</html>

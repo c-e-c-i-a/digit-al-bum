@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inst-Album – Accedi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <h1 class="app-title">Inst-Album 💜</h1>
+    <h2 class="auth-title">Accedi 🔑</h2>
+
+    <form id="login-form" class="auth-form">
+      <label>Email
+        <input type="email" id="login-email" required />
+      </label>
+
+      <label>Password 🔒
+        <input type="password" id="login-password" required />
+      </label>
+
+      <button type="submit" class="auth-button">Accedi 🔑</button>
+    </form>
+
+    <p class="auth-switch">
+      Non hai un account?
+      <a href="./signup.html">Registrati ✨</a>
+    </p>
+  </div>
+
+  <script type="module">
+    import { signInWithEmail } from './auth2.js';
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      await signInWithEmail(email, password);
+    });
+  </script>
+</body>
+</html>
