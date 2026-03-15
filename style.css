@@ -5,9 +5,17 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Poppins", sans-serif;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #001A4D, #005CFF, #7A00FF, #C77DFF);
   background-attachment: fixed;
   color: white;
+}
+
+/* BODY PROFILO FIX */
+.profile-body {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  z-index: 1;
 }
 
 /* ===========================
@@ -64,7 +72,7 @@ body {
   margin-top: 15px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #005CFF, #4A00E0, #C77DFF);
   color: white;
   font-size: 16px;
   cursor: pointer;
@@ -77,7 +85,7 @@ body {
 }
 
 .auth-switch a {
-  color: #FFD6FF;
+  color: #E0AFFF;
   font-weight: 600;
 }
 
@@ -93,6 +101,22 @@ body {
 .profile-title {
   font-size: 26px;
   font-weight: 700;
+}
+
+/* MENU FIX */
+.menu-container {
+  position: relative;
+  z-index: 1500;
+}
+
+.menu-button {
+  background: rgba(0,0,0,0.4);
+  border: none;
+  color: white;
+  font-size: 22px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 /* ===========================
@@ -117,7 +141,7 @@ body {
   padding: 12px;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #005CFF, #4A00E0, #C77DFF);
   color: white;
   font-size: 15px;
   cursor: pointer;
@@ -137,7 +161,7 @@ body {
 }
 
 /* ===========================
-   HIGHLIGHTS (FRIENDS)
+   HIGHLIGHTS
 =========================== */
 .highlights-section {
   margin-top: 30px;
@@ -173,7 +197,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #4A00E0, #7A00FF, #E0AFFF);
   overflow: hidden;
   color: white;
   font-size: 32px;
@@ -195,7 +219,7 @@ body {
 }
 
 /* ===========================
-   RICORDI GRID (3 COLONNE)
+   RICORDI GRID
 =========================== */
 .ricordi-grid {
   display: grid;
@@ -222,7 +246,7 @@ body {
 }
 
 /* ===========================
-   PULSANTE FLOTANTE +
+   PULSANTE FLOTANTE
 =========================== */
 .floating-add-btn {
   position: fixed;
@@ -231,7 +255,7 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #005CFF, #7A00FF, #C77DFF);
   color: #fff;
   font-size: 32px;
   border: none;
@@ -315,7 +339,7 @@ body {
   padding: 12px 16px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background: linear-gradient(135deg, #005CFF, #4A00E0, #C77DFF);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -329,6 +353,24 @@ body {
 .ricordo-modal-date {
   font-size: 12px;
   opacity: 0.7;
+}
+
+/* ===========================
+   CAROUSEL FIX
+=========================== */
+.carousel-container {
+  width: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.carousel-image {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
 }
 
 /* MENU */
