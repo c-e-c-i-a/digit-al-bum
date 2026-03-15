@@ -2,13 +2,14 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Inst-Album – Accedi</title>
+  <title>Inst-Album 💙 – Accedi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body class="auth-body">
   <div class="auth-container">
-    <h1 class="app-title">Inst-Album 💜</h1>
+    <h1 class="app-title">Inst-Album 💙</h1>
     <h2 class="auth-title">Accedi 🔑</h2>
 
     <form id="login-form" class="auth-form">
@@ -29,13 +30,19 @@
     </p>
   </div>
 
+  <!-- IMPORTANTE: prima supabaseClient.js -->
+  <script type="module" src="./supabaseClient.js"></script>
+
+  <!-- Poi il login vero e proprio -->
   <script type="module">
     import { signInWithEmail } from './auth2.js';
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value.trim();
+
       await signInWithEmail(email, password);
     });
   </script>
