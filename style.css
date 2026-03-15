@@ -1,5 +1,144 @@
-/* HIGHLIGHTS (FRIENDS) */
+/* ===========================
+   SFONDO GENERALE
+=========================== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #005CFF, #7A00FF);
+  background-attachment: fixed;
+  color: white;
+}
 
+/* ===========================
+   LOGIN / SIGNUP
+=========================== */
+.auth-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.auth-container {
+  width: 90%;
+  max-width: 380px;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  text-align: center;
+}
+
+.app-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.auth-title {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+.auth-form label {
+  display: block;
+  text-align: left;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  margin-top: 5px;
+  font-size: 15px;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4A00E0, #8E2DE2);
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+  transition: 0.2s;
+}
+
+.auth-button:hover {
+  transform: scale(1.03);
+}
+
+.auth-switch a {
+  color: #FFD6FF;
+  font-weight: 600;
+}
+
+/* ===========================
+   HEADER PROFILO
+=========================== */
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+.profile-title {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* ===========================
+   FOTO PROFILO + BIO
+=========================== */
+.profile-pic {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 20px auto;
+  display: block;
+  border: 4px solid rgba(255,255,255,0.6);
+  box-shadow: 0 0 20px rgba(255,255,255,0.4);
+}
+
+.change-pic-btn,
+.save-bio-btn {
+  width: 90%;
+  display: block;
+  margin: 10px auto;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4A00E0, #8E2DE2);
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+.bio-input {
+  width: 90%;
+  display: block;
+  margin: 10px auto;
+  padding: 15px;
+  border-radius: 15px;
+  border: none;
+  font-size: 15px;
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* ===========================
+   HIGHLIGHTS (FRIENDS)
+=========================== */
 .highlights-section {
   margin-top: 30px;
 }
@@ -8,6 +147,7 @@
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 10px;
+  color: #fff;
 }
 
 .highlights-row {
@@ -29,15 +169,16 @@
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.6);
+  border: 3px solid rgba(255,255,255,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.08);
+  background: linear-gradient(135deg, #4A00E0, #8E2DE2);
   overflow: hidden;
   color: white;
   font-size: 32px;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.35);
 }
 
 .highlight-circle img {
@@ -50,24 +191,28 @@
   font-size: 12px;
   text-align: center;
   max-width: 90px;
+  color: #fff;
 }
 
-/* RICORDI GRID */
-
+/* ===========================
+   RICORDI GRID (3 COLONNE)
+=========================== */
 .ricordi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 15px;
+  padding: 0 10px;
 }
 
 .ricordo-card-grid {
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 14px;
   cursor: pointer;
-  border: 2px solid rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.35);
 }
 
 .ricordo-cover-grid {
@@ -76,8 +221,9 @@
   object-fit: cover;
 }
 
-/* PULSANTE FLOTANTE + */
-
+/* ===========================
+   PULSANTE FLOTANTE +
+=========================== */
 .floating-add-btn {
   position: fixed;
   bottom: 20px;
@@ -85,44 +231,65 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7aa7ff, #4d6bff);
+  background: linear-gradient(135deg, #4A00E0, #8E2DE2);
   color: #fff;
   font-size: 32px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* MODAL BASE (riusa le tue classi .modal, .modal-backdrop) */
+/* ===========================
+   MODALI
+=========================== */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
 
 .ricordo-modal-content {
   position: relative;
   max-width: 420px;
   width: 90%;
   max-height: 90%;
-  background: rgba(10, 15, 35, 0.96);
-  border-radius: 16px;
-  padding: 16px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
+  padding: 20px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 12px;
   color: #fff;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.35);
 }
 
 .modal-close {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.5);
   border: none;
   color: #fff;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
 }
 
@@ -131,40 +298,30 @@
   margin-top: 6px;
 }
 
-.modal-textarea {
-  width: 100%;
-  min-height: 80px;
-  border-radius: 10px;
-  border: none;
-  padding: 10px;
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  resize: none;
-}
-
+.modal-textarea,
 .modal-input {
   width: 100%;
   border-radius: 10px;
   border: none;
-  padding: 8px 10px;
+  padding: 10px;
   background: rgba(255,255,255,0.08);
   color: #fff;
 }
 
 .modal-primary-btn {
   margin-top: 10px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #7aa7ff, #4d6bff);
-  color: #0a0f23;
+  background: linear-gradient(135deg, #4A00E0, #8E2DE2);
+  color: #fff;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.35);
 }
 
 .ricordo-modal-caption {
   font-size: 14px;
-  margin-top: 8px;
 }
 
 .ricordo-modal-date {
