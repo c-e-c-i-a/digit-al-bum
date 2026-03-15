@@ -2,37 +2,52 @@ import { supabase } from "./supabaseClient.js";
 
 // LOGIN
 export async function signInWithEmail(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error) {
-    alert("Errore di accesso: " + error.message);
-    return;
+    if (error) {
+      alert("Errore di accesso: " + error.message);
+      return;
+    }
+
+    window.location.href = "./profile.html";
+  } catch (err) {
+    console.error("Errore imprevisto nel login:", err);
+    alert("Si è verificato un errore inatteso.");
   }
-
-  window.location.href = "./profile.html";
 }
 
 // REGISTRAZIONE
 export async function signUpWithEmail(email, password) {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  try {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-  if (error) {
-    alert("Errore di registrazione: " + error.message);
-    return;
+    if (error) {
+      alert("Errore di registrazione: " + error.message);
+      return;
+    }
+
+    alert("Registrazione completata! Ora puoi accedere 🔑");
+    window.location.href = "./login.html";
+  } catch (err) {
+    console.error("Errore imprevisto nella registrazione:", err);
+    alert("Si è verificato un errore inatteso.");
   }
-
-  alert("Registrazione completata! Ora puoi accedere 🔑");
-  window.location.href = "./login.html";
 }
 
 // LOGOUT
 export async function logout() {
-  await supabase.auth.signOut();
-  window.location.href = "./login.html";
+  try {
+    await supabase.auth.signOut();
+    window.location.href = "./login.html";
+  } catch (err) {
+    console.error("Errore durante il logout:", err);
+    alert("Si è verificato un errore inatteso.");
+  }
 }
