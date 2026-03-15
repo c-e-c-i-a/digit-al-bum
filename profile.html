@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Il tuo profilo – Inst‑Album</title>
+  <title>Il tuo profilo – Inst‑Album 💙</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -53,7 +53,7 @@
     <div id="ricordiContainer"></div>
   </div>
 
-  <!-- NUOVO RICORDO (IN FONDO) -->
+  <!-- NUOVO RICORDO -->
   <div class="new-ricordo-section">
     <h2 class="new-ricordo-title">Crea un nuovo ricordo ✨</h2>
 
@@ -69,12 +69,16 @@
 
     <button id="publishRicordoBtn" class="publish-ricordo-btn">Pubblica ricordo</button>
   </div>
-  
-<!-- MODAL ZOOM FOTO -->
-<div id="imageModal" class="modal hidden">
-  <div class="modal-backdrop"></div>
-  <img id="modalImage" class="modal-image" src="" />
-</div>
+
+  <!-- MODAL ZOOM FOTO -->
+  <div id="imageModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-content">
+      <button id="closeModalBtn" class="modal-close">✖</button>
+      <img id="modalImage" class="modal-image" src="" />
+    </div>
+  </div>
 
   <!-- SCRIPT -->
   <script type="module" src="./profile.js"></script>
