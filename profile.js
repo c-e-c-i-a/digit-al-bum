@@ -1,6 +1,29 @@
 // profile.js
 import { supabase } from "./supabaseClient.js";
 
+profilePicInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const filePath = `profile/${user.id}.jpg`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("instalbum")
+    .upload(filePath, file, { upsert: true });
+
+  if (uploadError) {
+    console.error("UPLOAD ERROR:", uploadError);
+    alert("Errore nel caricamento: " + uploadError.message);
+    return;
+  }
+
+  const { data: urlData } = supabase.storage
+    .from("instalbum")
+    .getPublicUrl(filePath);
+
+  profilePic.src = urlData.publicUrl;
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
   const { data: { user } } = await supabase.auth.getUser();
 
