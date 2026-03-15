@@ -1,38 +1,6 @@
-import { supabase } from "./supabaseClient.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
-// LOGIN
-export async function signInWithEmail(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+const SUPABASE_URL = "https://jfvydtyvzuwjvfctwkyb.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_L-_zqSir9uFvtNSSuofI0g_FRt9cqPk";
 
-  if (error) {
-    alert("Errore di accesso: " + error.message);
-    return;
-  }
-
-  window.location.href = "./profile.html";
-}
-
-// REGISTRAZIONE
-export async function signUpWithEmail(email, password) {
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-
-  if (error) {
-    alert("Errore di registrazione: " + error.message);
-    return;
-  }
-
-  alert("Registrazione completata! Ora puoi accedere 🔑");
-  window.location.href = "./login.html";
-}
-
-// LOGOUT
-export async function logout() {
-  await supabase.auth.signOut();
-  window.location.href = "./login.html";
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
