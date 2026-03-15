@@ -1,76 +1,11 @@
 // profile.js
 import { supabase } from "./supabaseClient.js";
 
-profilePicInput.addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const filePath = `profile/${user.id}.jpg`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("instalbum")
-    .upload(filePath, file, { upsert: true });
-
-  if (uploadError) {
-    console.error("UPLOAD ERROR:", uploadError);
-    alert("Errore nel caricamento: " + uploadError.message);
-    return;
-  }
-
-  const { data: urlData } = supabase.storage
-    .from("instalbum")
-    .getPublicUrl(filePath);
-
-  profilePic.src = urlData.publicUrl;
-});
-
-document.addEventListener("DOMContentLoaded", async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const profilePic = document.getElementById("profilePic");
-  const changePicBtn = document.getElementById("changePicBtn");
-  const profilePicInput = document.getElementById("profilePicInput");
-
-  // APRI FILE PICKER
-  changePicBtn.addEventListener("click", () => {
-    profilePicInput.click();
-  });
-
-  // CARICA FOTO
-  profilePicInput.addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const filePath = `profile/${user.id}.jpg`;
-
-    // UPLOAD SU SUPABASE
-    const { error: uploadError } = await supabase.storage
-      .from("instalbum")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error(uploadError);
-      alert("Errore nel caricamento della foto");
-      return;
-    }
-
-    // OTTIENI URL PUBBLICO
-    const { data: urlData } = supabase.storage
-      .from("instalbum")
-      .getPublicUrl(filePath);
-
-    // MOSTRA LA FOTO
-    profilePic.src = urlData.publicUrl;
-  });
-});
-
 let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // 1) Recupero utente
+  const { data: { user }, error } = await supabase.auth.getUser();
 
   if (error || !user) {
     window.location.href = "login.html";
@@ -79,18 +14,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   currentUser = user;
 
+  // 2) Setup UI
   setupMenu();
   setupProfilePic();
   setupBio();
   setupRicordiUI();
   setupHighlightsUI();
 
+  // 3) Caricamento dati
   await loadProfile();
   await loadRicordi();
   await loadHighlights();
 });
 
-// MENU
+
+// ---------------- MENU ----------------
 function setupMenu() {
   const menuButton = document.getElementById("menuButton");
   const dropdownMenu = document.getElementById("dropdownMenu");
@@ -112,7 +50,8 @@ function setupMenu() {
   });
 }
 
-// FOTO PROFILO
+
+// ---------------- FOTO PROFILO ----------------
 function setupProfilePic() {
   const changePicBtn = document.getElementById("changePicBtn");
   const profilePicInput = document.getElementById("profilePicInput");
@@ -125,17 +64,19 @@ function setupProfilePic() {
     const file = e.target.files[0];
     if (!file || !currentUser) return;
 
+    // Percorso stabile e sicuro
     const fileName = `avatars/${currentUser.id}-${Date.now()}.jpg`;
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("instalbum")
       .upload(fileName, file, {
         cacheControl: "3600",
         upsert: true,
       });
 
-    if (error) {
-      console.error("Errore upload avatar:", error);
+    if (uploadError) {
+      console.error("Errore upload avatar:", uploadError);
+      alert("Errore nel caricamento: " + uploadError.message);
       return;
     }
 
@@ -143,6 +84,7 @@ function setupProfilePic() {
       .from("instalbum")
       .getPublicUrl(fileName).data.publicUrl;
 
+    // Salva URL nel profilo
     const { error: updateError } = await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })
@@ -157,13 +99,15 @@ function setupProfilePic() {
   });
 }
 
-// BIO
+
+// ---------------- BIO ----------------
 function setupBio() {
   const saveBioBtn = document.getElementById("saveBioBtn");
   const bioInput = document.getElementById("bioInput");
 
   saveBioBtn.addEventListener("click", async () => {
     if (!currentUser) return;
+
     const bio = bioInput.value.trim();
 
     const { error } = await supabase
@@ -173,7 +117,6 @@ function setupBio() {
 
     if (error) {
       console.error("Errore salvataggio bio:", error);
-      return;
     }
   });
 }
@@ -200,7 +143,8 @@ async function loadProfile() {
   }
 }
 
-// RICORDI (POST)
+
+// ---------------- RICORDI ----------------
 function setupRicordiUI() {
   const addRicordoBtn = document.getElementById("addRicordoBtn");
   const newRicordoModal = document.getElementById("newRicordoModal");
@@ -215,26 +159,11 @@ function setupRicordiUI() {
     newRicordoModal.classList.add("hidden");
   });
 
-  newRicordoModal
-    .querySelector(".modal-backdrop")
-    .addEventListener("click", () => {
-      newRicordoModal.classList.add("hidden");
-    });
+  newRicordoModal.querySelector(".modal-backdrop").addEventListener("click", () => {
+    newRicordoModal.classList.add("hidden");
+  });
 
   publishBtn.addEventListener("click", createRicordo);
-
-  // chiusura modal ricordo visualizzazione
-  const ricordoModal = document.getElementById("ricordoModal");
-  const closeRicordoModal = document.getElementById("closeRicordoModal");
-  const ricordoBackdrop = ricordoModal.querySelector(".modal-backdrop");
-
-  closeRicordoModal.addEventListener("click", () => {
-    ricordoModal.classList.add("hidden");
-  });
-
-  ricordoBackdrop.addEventListener("click", () => {
-    ricordoModal.classList.add("hidden");
-  });
 }
 
 async function createRicordo() {
@@ -254,12 +183,10 @@ async function createRicordo() {
   }
 
   const coverPath = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
+
   const { error: coverError } = await supabase.storage
     .from("instalbum")
-    .upload(coverPath, coverFile, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+    .upload(coverPath, coverFile, { upsert: true });
 
   if (coverError) {
     console.error("Errore upload copertina:", coverError);
@@ -287,12 +214,10 @@ async function createRicordo() {
 
   for (const file of photoFiles) {
     const photoPath = `ricordi/${currentUser.id}/${ricordoData.id}-${Date.now()}-${file.name}`;
+
     const { error: photoError } = await supabase.storage
       .from("instalbum")
-      .upload(photoPath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+      .upload(photoPath, file, { upsert: true });
 
     if (photoError) {
       console.error("Errore upload foto interna:", photoError);
@@ -303,16 +228,10 @@ async function createRicordo() {
       .from("instalbum")
       .getPublicUrl(photoPath).data.publicUrl;
 
-    const { error: insertPhotoError } = await supabase
-      .from("ricordi_photos")
-      .insert({
-        ricordo_id: ricordoData.id,
-        image_path: photoUrl,
-      });
-
-    if (insertPhotoError) {
-      console.error("Errore inserimento ricordo_photo:", insertPhotoError);
-    }
+    await supabase.from("ricordi_photos").insert({
+      ricordo_id: ricordoData.id,
+      image_path: photoUrl,
+    });
   }
 
   coverInput.value = "";
@@ -341,15 +260,10 @@ async function loadRicordi() {
   grid.innerHTML = "";
 
   for (const ricordo of ricordi) {
-    const { data: photos, error: photosError } = await supabase
+    const { data: photos } = await supabase
       .from("ricordi_photos")
       .select("*")
       .eq("ricordo_id", ricordo.id);
-
-    if (photosError) {
-      console.error("Errore caricamento foto ricordo:", photosError);
-      continue;
-    }
 
     const card = document.createElement("div");
     card.classList.add("ricordo-card-grid");
@@ -376,6 +290,7 @@ function openRicordoModal(ricordo, photos) {
   dateEl.textContent = new Date(ricordo.created_at).toLocaleString();
 
   carousel.innerHTML = "";
+
   if (!photos || photos.length === 0) {
     const img = document.createElement("img");
     img.classList.add("carousel-image");
@@ -393,13 +308,12 @@ function openRicordoModal(ricordo, photos) {
   modal.classList.remove("hidden");
 }
 
-// HIGHLIGHTS (FRIENDS)
+
+// ---------------- HIGHLIGHTS ----------------
 function setupHighlightsUI() {
   const newHighlightBtn = document.getElementById("newHighlightBtn");
   const newHighlightModal = document.getElementById("newHighlightModal");
-  const closeNewHighlightModal = document.getElementById(
-    "closeNewHighlightModal"
-  );
+  const closeNewHighlightModal = document.getElementById("closeNewHighlightModal");
   const createHighlightBtn = document.getElementById("createHighlightBtn");
 
   newHighlightBtn.addEventListener("click", () => {
@@ -410,11 +324,9 @@ function setupHighlightsUI() {
     newHighlightModal.classList.add("hidden");
   });
 
-  newHighlightModal
-    .querySelector(".modal-backdrop")
-    .addEventListener("click", () => {
-      newHighlightModal.classList.add("hidden");
-    });
+  newHighlightModal.querySelector(".modal-backdrop").addEventListener("click", () => {
+    newHighlightModal.classList.add("hidden");
+  });
 
   createHighlightBtn.addEventListener("click", createHighlight);
 
@@ -448,12 +360,10 @@ async function createHighlight() {
   }
 
   const coverPath = `highlights/${currentUser.id}/cover-${Date.now()}.jpg`;
+
   const { error: coverError } = await supabase.storage
     .from("instalbum")
-    .upload(coverPath, coverFile, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+    .upload(coverPath, coverFile, { upsert: true });
 
   if (coverError) {
     console.error("Errore upload copertina highlight:", coverError);
@@ -481,12 +391,10 @@ async function createHighlight() {
 
   for (const file of photoFiles) {
     const photoPath = `highlights/${currentUser.id}/${highlightData.id}-${Date.now()}-${file.name}`;
+
     const { error: photoError } = await supabase.storage
       .from("instalbum")
-      .upload(photoPath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+      .upload(photoPath, file, { upsert: true });
 
     if (photoError) {
       console.error("Errore upload foto highlight:", photoError);
@@ -497,16 +405,10 @@ async function createHighlight() {
       .from("instalbum")
       .getPublicUrl(photoPath).data.publicUrl;
 
-    const { error: insertPhotoError } = await supabase
-      .from("highlight_photos")
-      .insert({
-        highlight_id: highlightData.id,
-        image_path: photoUrl,
-      });
-
-    if (insertPhotoError) {
-      console.error("Errore inserimento highlight_photo:", insertPhotoError);
-    }
+    await supabase.from("highlight_photos").insert({
+      highlight_id: highlightData.id,
+      image_path: photoUrl,
+    });
   }
 
   titleInput.value = "";
@@ -578,6 +480,7 @@ async function openHighlightModal(highlight) {
   }
 
   carousel.innerHTML = "";
+
   (photos || []).forEach((p) => {
     const img = document.createElement("img");
     img.classList.add("carousel-image");
@@ -587,4 +490,3 @@ async function openHighlightModal(highlight) {
 
   modal.classList.remove("hidden");
 }
-
