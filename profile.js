@@ -5,7 +5,7 @@ let currentUser = null;
 let currentRicordoInModal = null;
 let currentHighlightInModal = null;
 
-// PRIMO BLOCCO: upload diretto avatar
+// Upload diretto avatar
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// INIZIALIZZAZIONE
+// Inizializzazione
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
@@ -466,7 +466,9 @@ function openRicordoModal(ricordo, photos) {
 
   carousel.innerHTML = "";
   carousel.style.display = "flex";
+  carousel.style.flexDirection = "row";
   carousel.style.overflowX = "auto";
+  carousel.style.overflowY = "hidden";
   carousel.style.gap = "10px";
 
   if (!photos || photos.length === 0) {
@@ -483,74 +485,77 @@ function openRicordoModal(ricordo, photos) {
     });
   }
 
-  let optionsBtn = document.getElementById("ricordoOptionsBtn");
-  let optionsMenu = document.getElementById("ricordoOptionsMenu");
+  const oldBtn = document.getElementById("ricordoOptionsBtn");
+  const oldMenu = document.getElementById("ricordoOptionsMenu");
+  if (oldBtn) oldBtn.remove();
+  if (oldMenu) oldMenu.remove();
 
-  if (!optionsBtn) {
-    optionsBtn = document.createElement("button");
-    optionsBtn.id = "ricordoOptionsBtn";
-    optionsBtn.textContent = "⋮";
-    optionsBtn.style.marginLeft = "8px";
+  const optionsBtn = document.createElement("button");
+  optionsBtn.id = "ricordoOptionsBtn";
+  optionsBtn.textContent = "⋮";
+  optionsBtn.style.marginLeft = "8px";
 
-    optionsMenu = document.createElement("div");
-    optionsMenu.id = "ricordoOptionsMenu";
+  const optionsMenu = document.createElement("div");
+  optionsMenu.id = "ricordoOptionsMenu";
+  optionsMenu.classList.add("hidden");
+  optionsMenu.style.position = "absolute";
+  optionsMenu.style.background = "white";
+  optionsMenu.style.border = "1px solid #ddd";
+  optionsMenu.style.borderRadius = "8px";
+  optionsMenu.style.padding = "8px";
+  optionsMenu.style.display = "flex";
+  optionsMenu.style.flexDirection = "column";
+  optionsMenu.style.gap = "4px";
+  optionsMenu.style.zIndex = "50";
+
+  const btnEdit = document.createElement("button");
+  btnEdit.textContent = "Modifica copertina";
+  btnEdit.onclick = () => {
     optionsMenu.classList.add("hidden");
-    optionsMenu.style.position = "absolute";
-    optionsMenu.style.background = "white";
-    optionsMenu.style.border = "1px solid #ddd";
-    optionsMenu.style.borderRadius = "8px";
-    optionsMenu.style.padding = "8px";
-    optionsMenu.style.display = "flex";
-    optionsMenu.style.flexDirection = "column";
-    optionsMenu.style.gap = "4px";
-    optionsMenu.style.zIndex = "50";
+    changeRicordoCover(currentRicordoInModal);
+  };
 
-    const btnEdit = document.createElement("button");
-    btnEdit.textContent = "Modifica copertina";
-    btnEdit.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      changeRicordoCover(currentRicordoInModal);
-    });
+  const btnAdd = document.createElement("button");
+  btnAdd.textContent = "Aggiungi foto";
+  btnAdd.onclick = () => {
+    optionsMenu.classList.add("hidden");
+    addRicordoPhotos(currentRicordoInModal);
+  };
 
-    const btnAdd = document.createElement("button");
-    btnAdd.textContent = "Aggiungi foto";
-    btnAdd.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      addRicordoPhotos(currentRicordoInModal);
-    });
+  const btnDeletePhotos = document.createElement("button");
+  btnDeletePhotos.textContent = "Elimina tutte le foto";
+  btnDeletePhotos.onclick = () => {
+    optionsMenu.classList.add("hidden");
+    deleteRicordoPhotos(currentRicordoInModal);
+  };
 
-    const btnDeletePhotos = document.createElement("button");
-    btnDeletePhotos.textContent = "Elimina tutte le foto";
-    btnDeletePhotos.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      deleteRicordoPhotos(currentRicordoInModal);
-    });
+  const btnDelete = document.createElement("button");
+  btnDelete.textContent = "Elimina ricordo";
+  btnDelete.style.color = "red";
+  btnDelete.onclick = () => {
+    optionsMenu.classList.add("hidden");
+    deleteRicordo(currentRicordoInModal.id);
+  };
 
-    const btnDelete = document.createElement("button");
-    btnDelete.textContent = "Elimina ricordo";
-    btnDelete.style.color = "red";
-    btnDelete.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      deleteRicordo(currentRicordoInModal.id);
-    });
+  optionsMenu.appendChild(btnEdit);
+  optionsMenu.appendChild(btnAdd);
+  optionsMenu.appendChild(btnDeletePhotos);
+  optionsMenu.appendChild(btnDelete);
 
-    optionsMenu.appendChild(btnEdit);
-    optionsMenu.appendChild(btnAdd);
-    optionsMenu.appendChild(btnDeletePhotos);
-    optionsMenu.appendChild(btnDelete);
+  captionEl.parentElement.style.position = "relative";
+  captionEl.insertAdjacentElement("afterend", optionsBtn);
+  captionEl.parentElement.appendChild(optionsMenu);
 
-    captionEl.parentElement.style.position = "relative";
-    captionEl.insertAdjacentElement("afterend", optionsBtn);
-    captionEl.parentElement.appendChild(optionsMenu);
+  optionsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    optionsMenu.classList.toggle("hidden");
+    optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
+    optionsMenu.style.right = "0px";
+  });
 
-    optionsBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      optionsMenu.classList.toggle("hidden");
-      optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
-      optionsMenu.style.right = "0px";
-    });
-
-    document.addEventListener("click", (e) => {
+  document.addEventListener(
+    "click",
+    (e) => {
       if (
         !optionsMenu.classList.contains("hidden") &&
         !optionsMenu.contains(e.target) &&
@@ -558,8 +563,9 @@ function openRicordoModal(ricordo, photos) {
       ) {
         optionsMenu.classList.add("hidden");
       }
-    });
-  }
+    },
+    { once: true }
+  );
 
   modal.classList.remove("hidden");
 }
@@ -864,7 +870,9 @@ async function openHighlightModal(highlight, preloadedPhotos) {
 
   carousel.innerHTML = "";
   carousel.style.display = "flex";
+  carousel.style.flexDirection = "row";
   carousel.style.overflowX = "auto";
+  carousel.style.overflowY = "hidden";
   carousel.style.gap = "10px";
 
   if (!photos || photos.length === 0) {
@@ -881,74 +889,77 @@ async function openHighlightModal(highlight, preloadedPhotos) {
     });
   }
 
-  let optionsBtn = document.getElementById("highlightOptionsBtn");
-  let optionsMenu = document.getElementById("highlightOptionsMenu");
+  const oldBtn = document.getElementById("highlightOptionsBtn");
+  const oldMenu = document.getElementById("highlightOptionsMenu");
+  if (oldBtn) oldBtn.remove();
+  if (oldMenu) oldMenu.remove();
 
-  if (!optionsBtn) {
-    optionsBtn = document.createElement("button");
-    optionsBtn.id = "highlightOptionsBtn";
-    optionsBtn.textContent = "⋮";
-    optionsBtn.style.marginLeft = "8px";
+  const optionsBtn = document.createElement("button");
+  optionsBtn.id = "highlightOptionsBtn";
+  optionsBtn.textContent = "⋮";
+  optionsBtn.style.marginLeft = "8px";
 
-    optionsMenu = document.createElement("div");
-    optionsMenu.id = "highlightOptionsMenu";
+  const optionsMenu = document.createElement("div");
+  optionsMenu.id = "highlightOptionsMenu";
+  optionsMenu.classList.add("hidden");
+  optionsMenu.style.position = "absolute";
+  optionsMenu.style.background = "white";
+  optionsMenu.style.border = "1px solid #ddd";
+  optionsMenu.style.borderRadius = "8px";
+  optionsMenu.style.padding = "8px";
+  optionsMenu.style.display = "flex";
+  optionsMenu.style.flexDirection = "column";
+  optionsMenu.style.gap = "4px";
+  optionsMenu.style.zIndex = "50";
+
+  const btnEdit = document.createElement("button");
+  btnEdit.textContent = "Modifica copertina";
+  btnEdit.addEventListener("click", () => {
     optionsMenu.classList.add("hidden");
-    optionsMenu.style.position = "absolute";
-    optionsMenu.style.background = "white";
-    optionsMenu.style.border = "1px solid #ddd";
-    optionsMenu.style.borderRadius = "8px";
-    optionsMenu.style.padding = "8px";
-    optionsMenu.style.display = "flex";
-    optionsMenu.style.flexDirection = "column";
-    optionsMenu.style.gap = "4px";
-    optionsMenu.style.zIndex = "50";
+    changeHighlightCover(currentHighlightInModal);
+  });
 
-    const btnEdit = document.createElement("button");
-    btnEdit.textContent = "Modifica copertina";
-    btnEdit.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      changeHighlightCover(currentHighlightInModal);
-    });
+  const btnAdd = document.createElement("button");
+  btnAdd.textContent = "Aggiungi foto";
+  btnAdd.addEventListener("click", () => {
+    optionsMenu.classList.add("hidden");
+    addHighlightPhotos(currentHighlightInModal);
+  });
 
-    const btnAdd = document.createElement("button");
-    btnAdd.textContent = "Aggiungi foto";
-    btnAdd.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      addHighlightPhotos(currentHighlightInModal);
-    });
+  const btnDeletePhotos = document.createElement("button");
+  btnDeletePhotos.textContent = "Elimina tutte le foto";
+  btnDeletePhotos.addEventListener("click", () => {
+    optionsMenu.classList.add("hidden");
+    deleteHighlightPhotos(currentHighlightInModal);
+  });
 
-    const btnDeletePhotos = document.createElement("button");
-    btnDeletePhotos.textContent = "Elimina tutte le foto";
-    btnDeletePhotos.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      deleteHighlightPhotos(currentHighlightInModal);
-    });
+  const btnDelete = document.createElement("button");
+  btnDelete.textContent = "Elimina highlight";
+  btnDelete.style.color = "red";
+  btnDelete.addEventListener("click", () => {
+    optionsMenu.classList.add("hidden");
+    deleteHighlight(currentHighlightInModal.id);
+  });
 
-    const btnDelete = document.createElement("button");
-    btnDelete.textContent = "Elimina highlight";
-    btnDelete.style.color = "red";
-    btnDelete.addEventListener("click", () => {
-      optionsMenu.classList.add("hidden");
-      deleteHighlight(currentHighlightInModal.id);
-    });
+  optionsMenu.appendChild(btnEdit);
+  optionsMenu.appendChild(btnAdd);
+  optionsMenu.appendChild(btnDeletePhotos);
+  optionsMenu.appendChild(btnDelete);
 
-    optionsMenu.appendChild(btnEdit);
-    optionsMenu.appendChild(btnAdd);
-    optionsMenu.appendChild(btnDeletePhotos);
-    optionsMenu.appendChild(btnDelete);
+  titleEl.parentElement.style.position = "relative";
+  titleEl.insertAdjacentElement("afterend", optionsBtn);
+  titleEl.parentElement.appendChild(optionsMenu);
 
-    titleEl.parentElement.style.position = "relative";
-    titleEl.insertAdjacentElement("afterend", optionsBtn);
-    titleEl.parentElement.appendChild(optionsMenu);
+  optionsBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    optionsMenu.classList.toggle("hidden");
+    optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
+    optionsMenu.style.right = "0px";
+  });
 
-    optionsBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      optionsMenu.classList.toggle("hidden");
-      optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
-      optionsMenu.style.right = "0px";
-    });
-
-    document.addEventListener("click", (e) => {
+  document.addEventListener(
+    "click",
+    (e) => {
       if (
         !optionsMenu.classList.contains("hidden") &&
         !optionsMenu.contains(e.target) &&
@@ -956,8 +967,9 @@ async function openHighlightModal(highlight, preloadedPhotos) {
       ) {
         optionsMenu.classList.add("hidden");
       }
-    });
-  }
+    },
+    { once: true }
+  );
 
   modal.classList.remove("hidden");
 }
