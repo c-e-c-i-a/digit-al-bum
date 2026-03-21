@@ -356,21 +356,27 @@ body {
 }
 
 /* ===========================
-   CAROUSEL FIX
+   CAROUSEL ORIZZONTALE (CORRETTO)
 =========================== */
-.carousel-container {
+#ricordoModalCarousel,
+#highlightModalCarousel {
   width: 100%;
-  max-height: 60vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: flex !important;
+  flex-direction: row !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  gap: 10px !important;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
 }
 
 .carousel-image {
-  width: 100%;
+  flex: 0 0 auto !important;
+  height: 260px;
+  width: auto !important;
   border-radius: 12px;
   object-fit: cover;
+  scroll-snap-align: center;
 }
 
 /* MENU */
