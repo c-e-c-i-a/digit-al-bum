@@ -6,6 +6,25 @@ let currentRicordoInModal = null;
 let currentHighlightInModal = null;
 
 /* ============================================================
+   BLOCCO — Caricamento icona app
+============================================================ */
+async function loadAppIcon() {
+  const { data, error } = await supabase
+    .from("icons")
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("Errore caricamento icona app:", error);
+    return;
+  }
+
+  if (data && data.image_url) {
+    document.getElementById("appIcon").src = data.image_url;
+  }
+}
+
+/* ============================================================
    BLOCCO 1 — Upload diretto avatar
 ============================================================ */
 document.addEventListener("DOMContentLoaded", async () => {
@@ -70,6 +89,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadProfile();
   await loadRicordi();
   await loadHighlights();
+  await loadAppIcon();
+
 });
 
 /* ============================================================
