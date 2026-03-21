@@ -5,7 +5,9 @@ let currentUser = null;
 let currentRicordoInModal = null;
 let currentHighlightInModal = null;
 
-// Upload diretto avatar
+/* ============================================================
+   BLOCCO 1 — Upload diretto avatar
+============================================================ */
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
@@ -17,9 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const changePicBtn = document.getElementById("changePicBtn");
   const profilePicInput = document.getElementById("profilePicInput");
 
-  changePicBtn.addEventListener("click", () => {
-    profilePicInput.click();
-  });
+  changePicBtn.addEventListener("click", () => profilePicInput.click());
 
   profilePicInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -27,12 +27,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const filePath = `profile/${user.id}.jpg`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error } = await supabase.storage
       .from("instalbum")
       .upload(filePath, file, { upsert: true });
 
-    if (uploadError) {
-      console.error(uploadError);
+    if (error) {
+      console.error(error);
       alert("Errore nel caricamento della foto");
       return;
     }
@@ -45,7 +45,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-// Inizializzazione
+/* ============================================================
+   BLOCCO 2 — Inizializzazione
+============================================================ */
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
@@ -70,7 +72,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadHighlights();
 });
 
-// MENU
+/* ============================================================
+   BLOCCO 3 — Menu
+============================================================ */
 function setupMenu() {
   const menuButton = document.getElementById("menuButton");
   const dropdownMenu = document.getElementById("dropdownMenu");
@@ -92,14 +96,14 @@ function setupMenu() {
   });
 }
 
-// FOTO PROFILO
+/* ============================================================
+   BLOCCO 4 — Foto profilo
+============================================================ */
 function setupProfilePic() {
   const changePicBtn = document.getElementById("changePicBtn");
   const profilePicInput = document.getElementById("profilePicInput");
 
-  changePicBtn.addEventListener("click", () => {
-    profilePicInput.click();
-  });
+  changePicBtn.addEventListener("click", () => profilePicInput.click());
 
   profilePicInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -109,10 +113,7 @@ function setupProfilePic() {
 
     const { error } = await supabase.storage
       .from("instalbum")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+      .upload(fileName, file, { upsert: true });
 
     if (error) {
       console.error("Errore upload avatar:", error);
@@ -123,97 +124,69 @@ function setupProfilePic() {
       .from("instalbum")
       .getPublicUrl(fileName).data.publicUrl;
 
-    const { error: updateError } = await supabase
+    await supabase
       .from("profiles")
       .update({ avatar_url: publicUrl })
       .eq("user_id", currentUser.id);
-
-    if (updateError) {
-      console.error("Errore update profilo:", updateError);
-      return;
-    }
 
     document.getElementById("profilePic").src = publicUrl;
   });
 }
 
-// BIO
+/* ============================================================
+   BLOCCO 5 — Bio
+============================================================ */
 function setupBio() {
   const saveBioBtn = document.getElementById("saveBioBtn");
   const bioInput = document.getElementById("bioInput");
 
   saveBioBtn.addEventListener("click", async () => {
     if (!currentUser) return;
+
     const bio = bioInput.value.trim();
 
-    const { error } = await supabase
+    await supabase
       .from("profiles")
       .update({ bio })
       .eq("user_id", currentUser.id);
-
-    if (error) {
-      console.error("Errore salvataggio bio:", error);
-      return;
-    }
   });
 }
 
 async function loadProfile() {
   if (!currentUser) return;
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("*")
     .eq("user_id", currentUser.id)
     .single();
 
-  if (error) {
-    console.error("Errore caricamento profilo:", error);
-    return;
-  }
-
-  if (data.avatar_url) {
-    document.getElementById("profilePic").src = data.avatar_url;
-  }
-  if (data.bio) {
-    document.getElementById("bioInput").value = data.bio;
-  }
+  if (data.avatar_url) document.getElementById("profilePic").src = data.avatar_url;
+  if (data.bio) document.getElementById("bioInput").value = data.bio;
 }
 
-// RICORDI (POST)
+/* ============================================================
+   BLOCCO 6 — Ricordi (UI + Creazione + Modal + Menu)
+============================================================ */
 function setupRicordiUI() {
   const addRicordoBtn = document.getElementById("addRicordoBtn");
   const newRicordoModal = document.getElementById("newRicordoModal");
   const closeNewRicordoModal = document.getElementById("closeNewRicordoModal");
   const publishBtn = document.getElementById("modalPublishBtn");
 
-  addRicordoBtn.addEventListener("click", () => {
-    newRicordoModal.classList.remove("hidden");
-  });
-
-  closeNewRicordoModal.addEventListener("click", () => {
+  addRicordoBtn.onclick = () => newRicordoModal.classList.remove("hidden");
+  closeNewRicordoModal.onclick = () => newRicordoModal.classList.add("hidden");
+  newRicordoModal.querySelector(".modal-backdrop").onclick = () =>
     newRicordoModal.classList.add("hidden");
-  });
 
-  newRicordoModal
-    .querySelector(".modal-backdrop")
-    .addEventListener("click", () => {
-      newRicordoModal.classList.add("hidden");
-    });
-
-  publishBtn.addEventListener("click", createRicordo);
+  publishBtn.onclick = createRicordo;
 
   const ricordoModal = document.getElementById("ricordoModal");
   const closeRicordoModal = document.getElementById("closeRicordoModal");
-  const ricordoBackdrop = ricordoModal.querySelector(".modal-backdrop");
 
-  closeRicordoModal.addEventListener("click", () => {
+  closeRicordoModal.onclick = () => ricordoModal.classList.add("hidden");
+  ricordoModal.querySelector(".modal-backdrop").onclick = () =>
     ricordoModal.classList.add("hidden");
-  });
-
-  ricordoBackdrop.addEventListener("click", () => {
-    ricordoModal.classList.add("hidden");
-  });
 }
 
 async function createRicordo() {
@@ -224,32 +197,17 @@ async function createRicordo() {
   const captionInput = document.getElementById("modalCaption");
 
   const coverFile = coverInput.files[0];
-  const photoFiles = Array.from(photosInput.files);
   const caption = captionInput.value.trim();
+  const photoFiles = Array.from(photosInput.files);
 
-  if (!coverFile) {
-    alert("Seleziona una copertina");
-    return;
-  }
+  if (!coverFile) return alert("Seleziona una copertina");
 
   const coverPath = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
-  const { error: coverError } = await supabase.storage
-    .from("instalbum")
-    .upload(coverPath, coverFile, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+  await supabase.storage.from("instalbum").upload(coverPath, coverFile, { upsert: true });
 
-  if (coverError) {
-    console.error("Errore upload copertina:", coverError);
-    return;
-  }
+  const coverUrl = supabase.storage.from("instalbum").getPublicUrl(coverPath).data.publicUrl;
 
-  const coverUrl = supabase.storage
-    .from("instalbum")
-    .getPublicUrl(coverPath).data.publicUrl;
-
-  const { data: ricordoData, error: ricordoError } = await supabase
+  const { data: ricordoData } = await supabase
     .from("ricordi")
     .insert({
       user_id: currentUser.id,
@@ -259,39 +217,16 @@ async function createRicordo() {
     .select("*")
     .single();
 
-  if (ricordoError) {
-    console.error("Errore inserimento ricordo:", ricordoError);
-    return;
-  }
+  for (const f of photoFiles) {
+    const photoPath = `ricordi/${currentUser.id}/${ricordoData.id}-${Date.now()}-${f.name}`;
+    await supabase.storage.from("instalbum").upload(photoPath, f, { upsert: true });
 
-  for (const file of photoFiles) {
-    const photoPath = `ricordi/${currentUser.id}/${ricordoData.id}-${Date.now()}-${file.name}`;
-    const { error: photoError } = await supabase.storage
-      .from("instalbum")
-      .upload(photoPath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+    const photoUrl = supabase.storage.from("instalbum").getPublicUrl(photoPath).data.publicUrl;
 
-    if (photoError) {
-      console.error("Errore upload foto interna:", photoError);
-      continue;
-    }
-
-    const photoUrl = supabase.storage
-      .from("instalbum")
-      .getPublicUrl(photoPath).data.publicUrl;
-
-    const { error: insertPhotoError } = await supabase
-      .from("ricordi_photos")
-      .insert({
-        ricordo_id: ricordoData.id,
-        image_path: photoUrl,
-      });
-
-    if (insertPhotoError) {
-      console.error("Errore inserimento ricordo_photo:", insertPhotoError);
-    }
+    await supabase.from("ricordi_photos").insert({
+      ricordo_id: ricordoData.id,
+      image_path: photoUrl,
+    });
   }
 
   coverInput.value = "";
@@ -303,52 +238,39 @@ async function createRicordo() {
 }
 
 async function loadRicordi() {
-  if (!currentUser) return;
-
-  const { data: ricordi, error } = await supabase
+  const { data: ricordi } = await supabase
     .from("ricordi")
     .select("*")
     .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Errore caricamento ricordi:", error);
-    return;
-  }
-
   const grid = document.getElementById("ricordiGrid");
   grid.innerHTML = "";
 
   for (const ricordo of ricordi) {
-    const { data: photos, error: photosError } = await supabase
+    const { data: photos } = await supabase
       .from("ricordi_photos")
       .select("*")
       .eq("ricordo_id", ricordo.id);
-
-    if (photosError) {
-      console.error("Errore caricamento foto ricordo:", photosError);
-      continue;
-    }
 
     const card = document.createElement("div");
     card.classList.add("ricordo-card-grid");
 
     card.innerHTML = `
-      <img class="ricordo-cover-grid" src="${ricordo.cover_image}" alt="Ricordo" />
+      <img class="ricordo-cover-grid" src="${ricordo.cover_image}" />
     `;
 
-    card.addEventListener("click", () => {
-      openRicordoModal(ricordo, photos || []);
-    });
-
+    card.onclick = () => openRicordoModal(ricordo, photos || []);
     grid.appendChild(card);
   }
 }
 
-// FUNZIONI DI MODIFICA RICORDO
-async function deleteRicordo(ricordoId) {
-  await supabase.from("ricordi_photos").delete().eq("ricordo_id", ricordoId);
-  await supabase.from("ricordi").delete().eq("id", ricordoId);
+/* ============================================================
+   BLOCCO 7 — Funzioni modifica ricordo
+============================================================ */
+async function deleteRicordo(id) {
+  await supabase.from("ricordi_photos").delete().eq("ricordo_id", id);
+  await supabase.from("ricordi").delete().eq("id", id);
   await loadRicordi();
   document.getElementById("ricordoModal").classList.add("hidden");
 }
@@ -362,34 +284,12 @@ async function changeRicordoCover(ricordo) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const coverPath = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
-    const { error: coverError } = await supabase.storage
-      .from("instalbum")
-      .upload(coverPath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+    const path = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
+    await supabase.storage.from("instalbum").upload(path, file, { upsert: true });
 
-    if (coverError) {
-      console.error("Errore cambio copertina:", coverError);
-      return;
-    }
+    const url = supabase.storage.from("instalbum").getPublicUrl(path).data.publicUrl;
 
-    const coverUrl = supabase.storage
-      .from("instalbum")
-      .getPublicUrl(coverPath).data.publicUrl;
-
-    const { error: updateError } = await supabase
-      .from("ricordi")
-      .update({ cover_image: coverUrl })
-      .eq("id", ricordo.id);
-
-    if (updateError) {
-      console.error("Errore update copertina:", updateError);
-      return;
-    }
-
-    await loadRicordi();
+    await supabase.from("ricordi").update({ cover_image: url }).eq("id", ricordo.id);
 
     const { data: photos } = await supabase
       .from("ricordi_photos")
@@ -397,6 +297,7 @@ async function changeRicordoCover(ricordo) {
       .eq("ricordo_id", ricordo.id);
 
     openRicordoModal(ricordo, photos || []);
+    await loadRicordi();
   };
 
   input.click();
@@ -409,29 +310,15 @@ async function addRicordoPhotos(ricordo) {
   input.multiple = true;
 
   input.onchange = async (e) => {
-    const files = Array.from(e.target.files);
+    for (const file of e.target.files) {
+      const path = `ricordi/${currentUser.id}/${ricordo.id}-${Date.now()}-${file.name}`;
+      await supabase.storage.from("instalbum").upload(path, file, { upsert: true });
 
-    for (const file of files) {
-      const photoPath = `ricordi/${currentUser.id}/${ricordo.id}-${Date.now()}-${file.name}`;
-      const { error: photoError } = await supabase.storage
-        .from("instalbum")
-        .upload(photoPath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (photoError) {
-        console.error("Errore upload nuova foto:", photoError);
-        continue;
-      }
-
-      const photoUrl = supabase.storage
-        .from("instalbum")
-        .getPublicUrl(photoPath).data.publicUrl;
+      const url = supabase.storage.from("instalbum").getPublicUrl(path).data.publicUrl;
 
       await supabase.from("ricordi_photos").insert({
         ricordo_id: ricordo.id,
-        image_path: photoUrl,
+        image_path: url,
       });
     }
 
@@ -448,11 +335,12 @@ async function addRicordoPhotos(ricordo) {
 
 async function deleteRicordoPhotos(ricordo) {
   await supabase.from("ricordi_photos").delete().eq("ricordo_id", ricordo.id);
-
   openRicordoModal(ricordo, []);
 }
 
-// MODAL RICORDO + TRE PUNTINI + SCORRIMENTO ORIZZONTALE
+/* ============================================================
+   BLOCCO 8 — Modal ricordo (corretto)
+============================================================ */
 function openRicordoModal(ricordo, photos) {
   currentRicordoInModal = ricordo;
 
@@ -464,6 +352,7 @@ function openRicordoModal(ricordo, photos) {
   captionEl.textContent = ricordo.caption || "";
   dateEl.textContent = new Date(ricordo.created_at).toLocaleString();
 
+  // --- SCORRIMENTO ORIZZONTALE ---
   carousel.innerHTML = "";
   carousel.style.display = "flex";
   carousel.style.flexDirection = "row";
@@ -485,11 +374,13 @@ function openRicordoModal(ricordo, photos) {
     });
   }
 
+  // --- RIMUOVI SEMPRE VECCHI TRE PUNTINI ---
   const oldBtn = document.getElementById("ricordoOptionsBtn");
   const oldMenu = document.getElementById("ricordoOptionsMenu");
   if (oldBtn) oldBtn.remove();
   if (oldMenu) oldMenu.remove();
 
+  // --- CREA SEMPRE NUOVI TRE PUNTINI ---
   const optionsBtn = document.createElement("button");
   optionsBtn.id = "ricordoOptionsBtn";
   optionsBtn.textContent = "⋮";
@@ -508,6 +399,7 @@ function openRicordoModal(ricordo, photos) {
   optionsMenu.style.gap = "4px";
   optionsMenu.style.zIndex = "50";
 
+  // --- PULSANTI MENU ---
   const btnEdit = document.createElement("button");
   btnEdit.textContent = "Modifica copertina";
   btnEdit.onclick = () => {
@@ -537,30 +429,23 @@ function openRicordoModal(ricordo, photos) {
     deleteRicordo(currentRicordoInModal.id);
   };
 
-  optionsMenu.appendChild(btnEdit);
-  optionsMenu.appendChild(btnAdd);
-  optionsMenu.appendChild(btnDeletePhotos);
-  optionsMenu.appendChild(btnDelete);
+  optionsMenu.append(btnEdit, btnAdd, btnDeletePhotos, btnDelete);
 
   captionEl.parentElement.style.position = "relative";
   captionEl.insertAdjacentElement("afterend", optionsBtn);
   captionEl.parentElement.appendChild(optionsMenu);
 
-  optionsBtn.addEventListener("click", (e) => {
+  optionsBtn.onclick = (e) => {
     e.stopPropagation();
     optionsMenu.classList.toggle("hidden");
     optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
     optionsMenu.style.right = "0px";
-  });
+  };
 
   document.addEventListener(
     "click",
     (e) => {
-      if (
-        !optionsMenu.classList.contains("hidden") &&
-        !optionsMenu.contains(e.target) &&
-        e.target !== optionsBtn
-      ) {
+      if (!optionsMenu.contains(e.target) && e.target !== optionsBtn) {
         optionsMenu.classList.add("hidden");
       }
     },
@@ -569,43 +454,47 @@ function openRicordoModal(ricordo, photos) {
 
   modal.classList.remove("hidden");
 }
-
-// HIGHLIGHTS (FRIENDS)
+/* ============================================================
+   BLOCCO 9 — Highlights (UI + Creazione + Modal + Menu)
+============================================================ */
 function setupHighlightsUI() {
   const newHighlightBtn = document.getElementById("newHighlightBtn");
   const newHighlightModal = document.getElementById("newHighlightModal");
-  const closeNewHighlightModal = document.getElementById(
-    "closeNewHighlightModal"
-  );
+  const closeNewHighlightModal = document.getElementById("closeNewHighlightModal");
   const createHighlightBtn = document.getElementById("createHighlightBtn");
 
-  newHighlightBtn.addEventListener("click", () => {
-    newHighlightModal.classList.remove("hidden");
-  });
+  if (newHighlightBtn) {
+    newHighlightBtn.onclick = () => newHighlightModal.classList.remove("hidden");
+  }
 
-  closeNewHighlightModal.addEventListener("click", () => {
-    newHighlightModal.classList.add("hidden");
-  });
+  if (closeNewHighlightModal) {
+    closeNewHighlightModal.onclick = () => newHighlightModal.classList.add("hidden");
+  }
 
-  newHighlightModal
-    .querySelector(".modal-backdrop")
-    .addEventListener("click", () => {
-      newHighlightModal.classList.add("hidden");
-    });
+  if (newHighlightModal) {
+    const backdrop = newHighlightModal.querySelector(".modal-backdrop");
+    if (backdrop) {
+      backdrop.onclick = () => newHighlightModal.classList.add("hidden");
+    }
+  }
 
-  createHighlightBtn.addEventListener("click", createHighlight);
+  if (createHighlightBtn) {
+    createHighlightBtn.onclick = createHighlight;
+  }
 
   const highlightModal = document.getElementById("highlightModal");
   const closeHighlightModal = document.getElementById("closeHighlightModal");
-  const highlightBackdrop = highlightModal.querySelector(".modal-backdrop");
 
-  closeHighlightModal.addEventListener("click", () => {
-    highlightModal.classList.add("hidden");
-  });
+  if (closeHighlightModal) {
+    closeHighlightModal.onclick = () => highlightModal.classList.add("hidden");
+  }
 
-  highlightBackdrop.addEventListener("click", () => {
-    highlightModal.classList.add("hidden");
-  });
+  if (highlightModal) {
+    const backdrop = highlightModal.querySelector(".modal-backdrop");
+    if (backdrop) {
+      backdrop.onclick = () => highlightModal.classList.add("hidden");
+    }
+  }
 }
 
 async function createHighlight() {
@@ -620,7 +509,7 @@ async function createHighlight() {
   const photoFiles = Array.from(photosInput.files);
 
   if (!title || !coverFile) {
-    alert("Nome e copertina sono obbligatori");
+    alert("Nome e copertina obbligatori");
     return;
   }
 
@@ -737,7 +626,9 @@ async function loadHighlights() {
   }
 }
 
-// FUNZIONI DI MODIFICA HIGHLIGHT
+/* ============================================================
+   BLOCCO 10 — Funzioni modifica highlight
+============================================================ */
 async function deleteHighlight(highlightId) {
   await supabase.from("highlight_photos").delete().eq("highlight_id", highlightId);
   await supabase.from("highlights").delete().eq("id", highlightId);
@@ -840,11 +731,12 @@ async function addHighlightPhotos(highlight) {
 
 async function deleteHighlightPhotos(highlight) {
   await supabase.from("highlight_photos").delete().eq("highlight_id", highlight.id);
-
   openHighlightModal(highlight, []);
 }
 
-// MODAL HIGHLIGHT + TRE PUNTINI + SCORRIMENTO ORIZZONTALE
+/* ============================================================
+   BLOCCO 11 — Modal highlight (corretto)
+============================================================ */
 async function openHighlightModal(highlight, preloadedPhotos) {
   currentHighlightInModal = highlight;
 
@@ -868,6 +760,7 @@ async function openHighlightModal(highlight, preloadedPhotos) {
     photos = data || [];
   }
 
+  // --- SCORRIMENTO ORIZZONTALE ---
   carousel.innerHTML = "";
   carousel.style.display = "flex";
   carousel.style.flexDirection = "row";
@@ -889,11 +782,13 @@ async function openHighlightModal(highlight, preloadedPhotos) {
     });
   }
 
+  // --- RIMUOVI SEMPRE VECCHI TRE PUNTINI ---
   const oldBtn = document.getElementById("highlightOptionsBtn");
   const oldMenu = document.getElementById("highlightOptionsMenu");
   if (oldBtn) oldBtn.remove();
   if (oldMenu) oldMenu.remove();
 
+  // --- CREA SEMPRE NUOVI TRE PUNTINI ---
   const optionsBtn = document.createElement("button");
   optionsBtn.id = "highlightOptionsBtn";
   optionsBtn.textContent = "⋮";
@@ -912,59 +807,53 @@ async function openHighlightModal(highlight, preloadedPhotos) {
   optionsMenu.style.gap = "4px";
   optionsMenu.style.zIndex = "50";
 
+  // --- PULSANTI MENU ---
   const btnEdit = document.createElement("button");
   btnEdit.textContent = "Modifica copertina";
-  btnEdit.addEventListener("click", () => {
+  btnEdit.onclick = () => {
     optionsMenu.classList.add("hidden");
     changeHighlightCover(currentHighlightInModal);
-  });
+  };
 
   const btnAdd = document.createElement("button");
   btnAdd.textContent = "Aggiungi foto";
-  btnAdd.addEventListener("click", () => {
+  btnAdd.onclick = () => {
     optionsMenu.classList.add("hidden");
     addHighlightPhotos(currentHighlightInModal);
-  });
+  };
 
   const btnDeletePhotos = document.createElement("button");
   btnDeletePhotos.textContent = "Elimina tutte le foto";
-  btnDeletePhotos.addEventListener("click", () => {
+  btnDeletePhotos.onclick = () => {
     optionsMenu.classList.add("hidden");
     deleteHighlightPhotos(currentHighlightInModal);
-  });
+  };
 
   const btnDelete = document.createElement("button");
   btnDelete.textContent = "Elimina highlight";
   btnDelete.style.color = "red";
-  btnDelete.addEventListener("click", () => {
+  btnDelete.onclick = () => {
     optionsMenu.classList.add("hidden");
     deleteHighlight(currentHighlightInModal.id);
-  });
+  };
 
-  optionsMenu.appendChild(btnEdit);
-  optionsMenu.appendChild(btnAdd);
-  optionsMenu.appendChild(btnDeletePhotos);
-  optionsMenu.appendChild(btnDelete);
+  optionsMenu.append(btnEdit, btnAdd, btnDeletePhotos, btnDelete);
 
   titleEl.parentElement.style.position = "relative";
   titleEl.insertAdjacentElement("afterend", optionsBtn);
   titleEl.parentElement.appendChild(optionsMenu);
 
-  optionsBtn.addEventListener("click", (e) => {
+  optionsBtn.onclick = (e) => {
     e.stopPropagation();
     optionsMenu.classList.toggle("hidden");
     optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
     optionsMenu.style.right = "0px";
-  });
+  };
 
   document.addEventListener(
     "click",
     (e) => {
-      if (
-        !optionsMenu.classList.contains("hidden") &&
-        !optionsMenu.contains(e.target) &&
-        e.target !== optionsBtn
-      ) {
+      if (!optionsMenu.contains(e.target) && e.target !== optionsBtn) {
         optionsMenu.classList.add("hidden");
       }
     },
