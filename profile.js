@@ -1,28 +1,32 @@
 // profile.js
 import { supabase } from "./supabaseClient.js";
 
+let currentUser = null;
+let currentRicordoInModal = null;
+let currentHighlightInModal = null;
+
+// PRIMO BLOCCO: upload diretto avatar
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) return;
+
   const profilePic = document.getElementById("profilePic");
   const changePicBtn = document.getElementById("changePicBtn");
   const profilePicInput = document.getElementById("profilePicInput");
 
-  // APRI FILE PICKER
   changePicBtn.addEventListener("click", () => {
     profilePicInput.click();
   });
 
-  // CARICA FOTO
   profilePicInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const filePath = `profile/${user.id}.jpg`;
 
-    // UPLOAD SU SUPABASE
     const { error: uploadError } = await supabase.storage
       .from("instalbum")
       .upload(filePath, file, { upsert: true });
@@ -33,18 +37,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // OTTIENI URL PUBBLICO
     const { data: urlData } = supabase.storage
       .from("instalbum")
       .getPublicUrl(filePath);
 
-    // MOSTRA LA FOTO
     profilePic.src = urlData.publicUrl;
   });
 });
 
-let currentUser = null;
-
+// INIZIALIZZAZIONE
 document.addEventListener("DOMContentLoaded", async () => {
   const {
     data: { user },
@@ -104,7 +105,6 @@ function setupProfilePic() {
     const file = e.target.files[0];
     if (!file || !currentUser) return;
 
-    // CORRETTO: usa la cartella profile/
     const fileName = `profile/${currentUser.id}-${Date.now()}.jpg`;
 
     const { error } = await supabase.storage
@@ -203,7 +203,6 @@ function setupRicordiUI() {
 
   publishBtn.addEventListener("click", createRicordo);
 
-  // chiusura modal ricordo visualizzazione
   const ricordoModal = document.getElementById("ricordoModal");
   const closeRicordoModal = document.getElementById("closeRicordoModal");
   const ricordoBackdrop = ricordoModal.querySelector(".modal-backdrop");
@@ -346,7 +345,117 @@ async function loadRicordi() {
   }
 }
 
+// FUNZIONI DI MODIFICA RICORDO
+async function deleteRicordo(ricordoId) {
+  await supabase.from("ricordi_photos").delete().eq("ricordo_id", ricordoId);
+  await supabase.from("ricordi").delete().eq("id", ricordoId);
+  await loadRicordi();
+  document.getElementById("ricordoModal").classList.add("hidden");
+}
+
+async function changeRicordoCover(ricordo) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const coverPath = `ricordi/${currentUser.id}/cover-${Date.now()}.jpg`;
+    const { error: coverError } = await supabase.storage
+      .from("instalbum")
+      .upload(coverPath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (coverError) {
+      console.error("Errore cambio copertina:", coverError);
+      return;
+    }
+
+    const coverUrl = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(coverPath).data.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("ricordi")
+      .update({ cover_image: coverUrl })
+      .eq("id", ricordo.id);
+
+    if (updateError) {
+      console.error("Errore update copertina:", updateError);
+      return;
+    }
+
+    await loadRicordi();
+
+    const { data: photos } = await supabase
+      .from("ricordi_photos")
+      .select("*")
+      .eq("ricordo_id", ricordo.id);
+
+    openRicordoModal(ricordo, photos || []);
+  };
+
+  input.click();
+}
+
+async function addRicordoPhotos(ricordo) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.multiple = true;
+
+  input.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+
+    for (const file of files) {
+      const photoPath = `ricordi/${currentUser.id}/${ricordo.id}-${Date.now()}-${file.name}`;
+      const { error: photoError } = await supabase.storage
+        .from("instalbum")
+        .upload(photoPath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (photoError) {
+        console.error("Errore upload nuova foto:", photoError);
+        continue;
+      }
+
+      const photoUrl = supabase.storage
+        .from("instalbum")
+        .getPublicUrl(photoPath).data.publicUrl;
+
+      await supabase.from("ricordi_photos").insert({
+        ricordo_id: ricordo.id,
+        image_path: photoUrl,
+      });
+    }
+
+    const { data: photos } = await supabase
+      .from("ricordi_photos")
+      .select("*")
+      .eq("ricordo_id", ricordo.id);
+
+    openRicordoModal(ricordo, photos || []);
+  };
+
+  input.click();
+}
+
+async function deleteRicordoPhotos(ricordo) {
+  await supabase.from("ricordi_photos").delete().eq("ricordo_id", ricordo.id);
+
+  openRicordoModal(ricordo, []);
+}
+
+// MODAL RICORDO + TRE PUNTINI + SCORRIMENTO ORIZZONTALE
 function openRicordoModal(ricordo, photos) {
+  currentRicordoInModal = ricordo;
+
   const modal = document.getElementById("ricordoModal");
   const captionEl = document.getElementById("ricordoModalCaption");
   const dateEl = document.getElementById("ricordoModalDate");
@@ -356,6 +465,10 @@ function openRicordoModal(ricordo, photos) {
   dateEl.textContent = new Date(ricordo.created_at).toLocaleString();
 
   carousel.innerHTML = "";
+  carousel.style.display = "flex";
+  carousel.style.overflowX = "auto";
+  carousel.style.gap = "10px";
+
   if (!photos || photos.length === 0) {
     const img = document.createElement("img");
     img.classList.add("carousel-image");
@@ -367,6 +480,84 @@ function openRicordoModal(ricordo, photos) {
       img.classList.add("carousel-image");
       img.src = p.image_path;
       carousel.appendChild(img);
+    });
+  }
+
+  let optionsBtn = document.getElementById("ricordoOptionsBtn");
+  let optionsMenu = document.getElementById("ricordoOptionsMenu");
+
+  if (!optionsBtn) {
+    optionsBtn = document.createElement("button");
+    optionsBtn.id = "ricordoOptionsBtn";
+    optionsBtn.textContent = "⋮";
+    optionsBtn.style.marginLeft = "8px";
+
+    optionsMenu = document.createElement("div");
+    optionsMenu.id = "ricordoOptionsMenu";
+    optionsMenu.classList.add("hidden");
+    optionsMenu.style.position = "absolute";
+    optionsMenu.style.background = "white";
+    optionsMenu.style.border = "1px solid #ddd";
+    optionsMenu.style.borderRadius = "8px";
+    optionsMenu.style.padding = "8px";
+    optionsMenu.style.display = "flex";
+    optionsMenu.style.flexDirection = "column";
+    optionsMenu.style.gap = "4px";
+    optionsMenu.style.zIndex = "50";
+
+    const btnEdit = document.createElement("button");
+    btnEdit.textContent = "Modifica copertina";
+    btnEdit.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      changeRicordoCover(currentRicordoInModal);
+    });
+
+    const btnAdd = document.createElement("button");
+    btnAdd.textContent = "Aggiungi foto";
+    btnAdd.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      addRicordoPhotos(currentRicordoInModal);
+    });
+
+    const btnDeletePhotos = document.createElement("button");
+    btnDeletePhotos.textContent = "Elimina tutte le foto";
+    btnDeletePhotos.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      deleteRicordoPhotos(currentRicordoInModal);
+    });
+
+    const btnDelete = document.createElement("button");
+    btnDelete.textContent = "Elimina ricordo";
+    btnDelete.style.color = "red";
+    btnDelete.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      deleteRicordo(currentRicordoInModal.id);
+    });
+
+    optionsMenu.appendChild(btnEdit);
+    optionsMenu.appendChild(btnAdd);
+    optionsMenu.appendChild(btnDeletePhotos);
+    optionsMenu.appendChild(btnDelete);
+
+    captionEl.parentElement.style.position = "relative";
+    captionEl.insertAdjacentElement("afterend", optionsBtn);
+    captionEl.parentElement.appendChild(optionsMenu);
+
+    optionsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      optionsMenu.classList.toggle("hidden");
+      optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
+      optionsMenu.style.right = "0px";
+    });
+
+    document.addEventListener("click", (e) => {
+      if (
+        !optionsMenu.classList.contains("hidden") &&
+        !optionsMenu.contains(e.target) &&
+        e.target !== optionsBtn
+      ) {
+        optionsMenu.classList.add("hidden");
+      }
     });
   }
 
@@ -460,7 +651,6 @@ async function createHighlight() {
   }
 
   for (const file of photoFiles) {
-    // CORRETTO: usa la cartella highlights_photos/
     const photoPath = `highlights_photos/${currentUser.id}/${highlightData.id}-${Date.now()}-${file.name}`;
     const { error: photoError } = await supabase.storage
       .from("instalbum")
@@ -541,30 +731,233 @@ async function loadHighlights() {
   }
 }
 
-async function openHighlightModal(highlight) {
+// FUNZIONI DI MODIFICA HIGHLIGHT
+async function deleteHighlight(highlightId) {
+  await supabase.from("highlight_photos").delete().eq("highlight_id", highlightId);
+  await supabase.from("highlights").delete().eq("id", highlightId);
+  await loadHighlights();
+  document.getElementById("highlightModal").classList.add("hidden");
+}
+
+async function changeHighlightCover(highlight) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const coverPath = `highlights/${currentUser.id}/cover-${Date.now()}.jpg`;
+    const { error: coverError } = await supabase.storage
+      .from("instalbum")
+      .upload(coverPath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (coverError) {
+      console.error("Errore cambio copertina highlight:", coverError);
+      return;
+    }
+
+    const coverUrl = supabase.storage
+      .from("instalbum")
+      .getPublicUrl(coverPath).data.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from("highlights")
+      .update({ cover_image: coverUrl })
+      .eq("id", highlight.id);
+
+    if (updateError) {
+      console.error("Errore update copertina highlight:", updateError);
+      return;
+    }
+
+    await loadHighlights();
+
+    const { data: photos } = await supabase
+      .from("highlight_photos")
+      .select("*")
+      .eq("highlight_id", highlight.id);
+
+    openHighlightModal(highlight, photos || []);
+  };
+
+  input.click();
+}
+
+async function addHighlightPhotos(highlight) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.multiple = true;
+
+  input.onchange = async (e) => {
+    const files = Array.from(e.target.files);
+
+    for (const file of files) {
+      const photoPath = `highlights_photos/${currentUser.id}/${highlight.id}-${Date.now()}-${file.name}`;
+      const { error: photoError } = await supabase.storage
+        .from("instalbum")
+        .upload(photoPath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (photoError) {
+        console.error("Errore upload nuova foto highlight:", photoError);
+        continue;
+      }
+
+      const photoUrl = supabase.storage
+        .from("instalbum")
+        .getPublicUrl(photoPath).data.publicUrl;
+
+      await supabase.from("highlight_photos").insert({
+        highlight_id: highlight.id,
+        image_path: photoUrl,
+      });
+    }
+
+    const { data: photos } = await supabase
+      .from("highlight_photos")
+      .select("*")
+      .eq("highlight_id", highlight.id);
+
+    openHighlightModal(highlight, photos || []);
+  };
+
+  input.click();
+}
+
+async function deleteHighlightPhotos(highlight) {
+  await supabase.from("highlight_photos").delete().eq("highlight_id", highlight.id);
+
+  openHighlightModal(highlight, []);
+}
+
+// MODAL HIGHLIGHT + TRE PUNTINI + SCORRIMENTO ORIZZONTALE
+async function openHighlightModal(highlight, preloadedPhotos) {
+  currentHighlightInModal = highlight;
+
   const modal = document.getElementById("highlightModal");
   const titleEl = document.getElementById("highlightModalTitle");
   const carousel = document.getElementById("highlightModalCarousel");
 
   titleEl.textContent = highlight.title;
 
-  const { data: photos, error } = await supabase
-    .from("highlight_photos")
-    .select("*")
-    .eq("highlight_id", highlight.id);
+  let photos = preloadedPhotos;
+  if (!photos) {
+    const { data, error } = await supabase
+      .from("highlight_photos")
+      .select("*")
+      .eq("highlight_id", highlight.id);
 
-  if (error) {
-    console.error("Errore caricamento foto highlight:", error);
-    return;
+    if (error) {
+      console.error("Errore caricamento foto highlight:", error);
+      return;
+    }
+    photos = data || [];
   }
 
   carousel.innerHTML = "";
-  (photos || []).forEach((p) => {
+  carousel.style.display = "flex";
+  carousel.style.overflowX = "auto";
+  carousel.style.gap = "10px";
+
+  if (!photos || photos.length === 0) {
     const img = document.createElement("img");
     img.classList.add("carousel-image");
-    img.src = p.image_path;
+    img.src = highlight.cover_image;
     carousel.appendChild(img);
-  });
+  } else {
+    photos.forEach((p) => {
+      const img = document.createElement("img");
+      img.classList.add("carousel-image");
+      img.src = p.image_path;
+      carousel.appendChild(img);
+    });
+  }
+
+  let optionsBtn = document.getElementById("highlightOptionsBtn");
+  let optionsMenu = document.getElementById("highlightOptionsMenu");
+
+  if (!optionsBtn) {
+    optionsBtn = document.createElement("button");
+    optionsBtn.id = "highlightOptionsBtn";
+    optionsBtn.textContent = "⋮";
+    optionsBtn.style.marginLeft = "8px";
+
+    optionsMenu = document.createElement("div");
+    optionsMenu.id = "highlightOptionsMenu";
+    optionsMenu.classList.add("hidden");
+    optionsMenu.style.position = "absolute";
+    optionsMenu.style.background = "white";
+    optionsMenu.style.border = "1px solid #ddd";
+    optionsMenu.style.borderRadius = "8px";
+    optionsMenu.style.padding = "8px";
+    optionsMenu.style.display = "flex";
+    optionsMenu.style.flexDirection = "column";
+    optionsMenu.style.gap = "4px";
+    optionsMenu.style.zIndex = "50";
+
+    const btnEdit = document.createElement("button");
+    btnEdit.textContent = "Modifica copertina";
+    btnEdit.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      changeHighlightCover(currentHighlightInModal);
+    });
+
+    const btnAdd = document.createElement("button");
+    btnAdd.textContent = "Aggiungi foto";
+    btnAdd.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      addHighlightPhotos(currentHighlightInModal);
+    });
+
+    const btnDeletePhotos = document.createElement("button");
+    btnDeletePhotos.textContent = "Elimina tutte le foto";
+    btnDeletePhotos.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      deleteHighlightPhotos(currentHighlightInModal);
+    });
+
+    const btnDelete = document.createElement("button");
+    btnDelete.textContent = "Elimina highlight";
+    btnDelete.style.color = "red";
+    btnDelete.addEventListener("click", () => {
+      optionsMenu.classList.add("hidden");
+      deleteHighlight(currentHighlightInModal.id);
+    });
+
+    optionsMenu.appendChild(btnEdit);
+    optionsMenu.appendChild(btnAdd);
+    optionsMenu.appendChild(btnDeletePhotos);
+    optionsMenu.appendChild(btnDelete);
+
+    titleEl.parentElement.style.position = "relative";
+    titleEl.insertAdjacentElement("afterend", optionsBtn);
+    titleEl.parentElement.appendChild(optionsMenu);
+
+    optionsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      optionsMenu.classList.toggle("hidden");
+      optionsMenu.style.top = optionsBtn.offsetTop + 20 + "px";
+      optionsMenu.style.right = "0px";
+    });
+
+    document.addEventListener("click", (e) => {
+      if (
+        !optionsMenu.classList.contains("hidden") &&
+        !optionsMenu.contains(e.target) &&
+        e.target !== optionsBtn
+      ) {
+        optionsMenu.classList.add("hidden");
+      }
+    });
+  }
 
   modal.classList.remove("hidden");
 }
